@@ -32,10 +32,10 @@ int main(int argc, char** argv) {
     ContinuousPlanner planner;
 	
 	// Create the subscription to the odometry message
-    ros::Subscriber sub_odom = n.subscribe("odom", 10, planner.odomCallback); 
+    ros::Subscriber sub_odom = n.subscribe("odom", 1000, &ContinuousPlanner::odomCallback, &planner); 
 
     // Create the publisher to publish the navigation path (use the n.advertize)
-    ros::Publisher pub_plan = n.advertise<dummy_planner::plan>("planner_continuous_node",10);
+    ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("plan",1000);
 
     // Create the service request
     nav_msgs::GetPlan srv;
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     srv.request.goal.pose.position.z = 0;
 
     // Create the service client
-    ros::ServiceClient client = n.serviceClient<dummy_planner::dummy_plan>("dummy_plan");
+    ros::ServiceClient client = n.serviceClient<nav_msgs::GetPlan>("dummy_plan");
 
     // Run the program at 10 hz
     ros::Rate rate(10);
