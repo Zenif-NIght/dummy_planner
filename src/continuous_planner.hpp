@@ -19,7 +19,7 @@ public:
     /*!
      * This function will be used to store odometry messages
      */
-    static void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
+    void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
     /*!
      * \brief getLatestPose Uses the latest odometry message to populate the pose information
