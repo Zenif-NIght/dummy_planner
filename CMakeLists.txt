@@ -145,9 +145,9 @@ add_executable(dummy_planner_server src/dummy_planner_server.cpp)
 add_dependencies(dummy_planner_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(dummy_planner_server ${catkin_LIBRARIES})
 
-# add_executable(service_client src/service_client.cpp)
-# add_dependencies(service_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(service_client ${catkin_LIBRARIES})
+add_executable(continuous_planner src/continuous_planner.cpp)
+add_dependencies(continuous_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(continuous_planner ${catkin_LIBRARIES})
 
 
 ## Rename C++ executable without prefix

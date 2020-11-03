@@ -4,8 +4,12 @@
 #include "ros/ros.h"
 
 //TODO: Include the navigation messages odometry and path messages
-#include ???
-#include ???
+// #include "nav_msgs.h"
+// #include ???
+#include "nav_msgs/GetPlan.h"
+#include "nav_msgs/Path.h"
+
+#include "nav_msgs/Odometry.h"
 
 namespace dummy_planner {
 class ContinuousPlanner {
@@ -15,7 +19,7 @@ public:
     /*!
      * This function will be used to store odometry messages
      */
-    void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
+    static void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
     /*!
      * \brief getLatestPose Uses the latest odometry message to populate the pose information
@@ -26,9 +30,9 @@ public:
 
 private:
     /*!
-     * \brief latest_odom is a pointer to the latest odometry message received
+     * \brief m_latest_odom is a pointer to the latest odometry message received
      */
-    nav_msgs::Odometry::ConstPtr latest_odom;
+    static nav_msgs::Odometry::ConstPtr m_latest_odom;
 };
 
 }

@@ -1,8 +1,10 @@
 #include "ros/ros.h"
 
-//TODO: Include the navigation messages GetPlan and Path
+// Include the navigation messages GetPlan and Path
 #include "nav_msgs/GetPlan.h"
 #include "nav_msgs/Path.h"
+// #include "nav_msgs/Path.h"
+
 
 /*!
  A service server which creates a plan consisting of the starting and end points

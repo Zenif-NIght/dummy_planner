@@ -1,23 +1,23 @@
-#include "dummy_planner/continuous_planner.hpp"
+#include "./continuous_planner.hpp"
 
 #include "nav_msgs/GetPlan.h"
 
 using namespace dummy_planner;
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
-    latest_odom = msg;
+    m_latest_odom = msg;
 }
 
 bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose) {
     // Check to see if the pose has been received
     bool received = false; // Default is that no pose has been received
-    if(latest_odom) {
+    if(m_latest_odom) {
         // Populate the header
-        pose.header.stamp = latest_odom->header.stamp;
-        pose.header.frame_id = latest_odom->header.frame_id;
+        pose.header.stamp = m_latest_odom->header.stamp;
+        pose.header.frame_id = m_latest_odom->header.frame_id;
 		
-		//TODO: put the pose from the latest odometry into the pose variable
-        pose.pose = ???;
+		// put the pose from the latest odometry into the pose variable
+        pose.pose = m_latest_odom->pose.pose;
         received = true; // Indicate that the pose was received
     }
     return received;
@@ -31,11 +31,11 @@ int main(int argc, char** argv) {
 	// Initialize the continuous planner
     ContinuousPlanner planner;
 	
-	//TODO: Create the subscription to the odometry message
-    ros::Subscriber sub_odom = ???; 
+	// Create the subscription to the odometry message
+    ros::Subscriber sub_odom = n.subscribe("odom", 10, planner.odomCallback); 
 
-    //TODO: Create the publisher to publish the navigation path (use the n.advertize)
-    ros::Publisher pub_plan = ???;
+    // Create the publisher to publish the navigation path (use the n.advertize)
+    ros::Publisher pub_plan = n.advertise<dummy_planner::plan>("planner_continuous_node",10);
 
     // Create the service request
     nav_msgs::GetPlan srv;
@@ -43,8 +43,8 @@ int main(int argc, char** argv) {
     srv.request.goal.pose.position.y = 0;
     srv.request.goal.pose.position.z = 0;
 
-    //TODO: Create the service client
-    ros::ServiceClient client = ???;
+    // Create the service client
+    ros::ServiceClient client = n.serviceClient<dummy_planner::dummy_plan>("dummy_plan");
 
     // Run the program at 10 hz
     ros::Rate rate(10);
@@ -60,8 +60,8 @@ int main(int argc, char** argv) {
 
             // Make the service request
             if(client.call(srv)) {
-                //TODO: Publish the planned path
-                pub_plan.???;
+                // Publish the planned path
+                pub_plan.publish(srv.response.plan);
             } else {
                 ROS_WARN_THROTTLE(1, "The service could not be connected");
             }
