@@ -141,7 +141,14 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/dummy_planner_node.cpp)
 
-# add_executable(planner_server_node src/dummy_planner_sever.cpp)
+add_executable(dummy_planner_server src/dummy_planner_server.cpp)
+add_dependencies(dummy_planner_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(dummy_planner_server ${catkin_LIBRARIES})
+
+# add_executable(service_client src/service_client.cpp)
+# add_dependencies(service_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(service_client ${catkin_LIBRARIES})
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

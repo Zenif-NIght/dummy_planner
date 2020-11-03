@@ -1,8 +1,8 @@
 #include "ros/ros.h"
 
 //TODO: Include the navigation messages GetPlan and Path
-#include ???
-#include ???
+#include "nav_msgs/GetPlan.h"
+#include "nav_msgs/Path.h"
 
 /*!
  A service server which creates a plan consisting of the starting and end points
@@ -14,12 +14,12 @@ bool createDummyPlan(nav_msgs::GetPlan::Request & req,
     // Create the plan header
     res.plan.header.stamp = ros::Time::now();               // Set the time stamp to the current ros time
     res.plan.header.frame_id = req.start.header.frame_id;   // Use the frame from the starting point
+    
+    // Add the starting point
+    res.plan.poses.emplace_back(req.start);
 
-    //TODO: Add the starting point
-    res.plan.???;
-
-    // Add the ending poitn
-    res.plan.???;
+    // Add the ending point
+    res.plan.poses.emplace_back(req.goal);
     return true;
 }
 
@@ -31,9 +31,10 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "planner_server_node");
     ros::NodeHandle n;
 
-    //TODO: Advertise the service
-    ???
-	
+    // Advertise the service
+    ros::ServiceServer service = n.advertiseService("dummy_plan", createDummyPlan);
+
+	ROS_INFO("Ready to make a plan with two Points.");
 	// Spin to wait for service requests
     ros::spin();
 }
