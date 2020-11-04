@@ -32,7 +32,7 @@ private:
     /*!
      * \brief m_latest_odom is a pointer to the latest odometry message received
      */
-    static nav_msgs::Odometry::ConstPtr m_latest_odom;
+     nav_msgs::Odometry::ConstPtr m_latest_odom;
 };
 
 }

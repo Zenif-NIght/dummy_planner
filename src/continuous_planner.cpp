@@ -32,11 +32,15 @@ int main(int argc, char** argv) {
     ContinuousPlanner planner;
 	
 	// Create the subscription to the odometry message
-    ros::Subscriber sub_odom = n.subscribe("odom", 1000, &ContinuousPlanner::odomCallback, &planner); 
+    ros::Subscriber sub_odom = n.subscribe("robot1/odom", 
+                                            1000,
+                                            &ContinuousPlanner::odomCallback,
+                                            &planner); 
+    ROS_INFO("Ready to Subscriber to odom.");                                        
 
     // Create the publisher to publish the navigation path (use the n.advertize)
-    ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("plan",1000);
-
+    ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("robot1/path",1000);
+    ROS_INFO("Ready to Publisher plan.");
     // Create the service request
     nav_msgs::GetPlan srv;
     srv.request.goal.pose.position.x = 0;

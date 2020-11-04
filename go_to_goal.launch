@@ -1,0 +1,67 @@
+<launch>
+  <arg name="model" default="waffle_pi" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="namespace" default="/robot1"/>
+  <arg name="run_sim" default="true"/> <!-- true => the simulation nodes will be run, only needs to be done for a single vehicle -->
+  <arg name="run_rviz" default="true"/> <!-- true => open rviz, only needs to be done for a single vehicle -->
+  <arg name="run_joystick" default="false"/> <!-- true => use the joystick node, false => use go-to-goal controller -->
+  <arg name="spawn_gazebo" default="false" /> <!-- true => use gazebo for the physics engine, false => use simple physics -->
+  <arg name="x_pos" default="-7.0"/> <!-- Pose of vehicle at start -->
+  <arg name="y_pos" default="-1.0"/>
+  <arg name="z_pos" default=" 0.0"/>
+  <arg name="yaw"   default=" 1.57"/>
+  <arg name="dynamics_model" default="unicycle_dynamics"/> <!-- options: "unicycle_dynamics" - use a unicycle model, "jerk_unicycle_dynamics" - use a jerk model -->
+  <arg name="goal_topic" default="/move_base_simple/goal" />
+
+  <!-- Start Simulation -->
+  <group if="$(arg run_sim)">
+      <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg spawn_gazebo)">
+        <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_house.world"/>
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="false"/>
+        <arg name="headless" value="false"/>
+        <arg name="debug" value="false"/>
+      </include>
+
+      <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_launch)/rviz/Proj2.rviz" if="$(arg run_rviz)"/>
+
+      <!-- Run the Joystick listener and control -->
+      <group if="$(arg run_joystick)">
+          <node name="joy" pkg="joy" type="joy_node">
+            <param name="dev" value="/dev/input/js2" />
+          </node>
+
+          <node name="teleop_joystick" pkg="controllers" type="multi_agent_joystick" output="screen">
+            <remap from="/cmd_vel" to="$(arg namespace)/cmd_vel" />
+          </node>
+      </group>
+  </group>
+
+  <!-- Create Vehicle -->
+  <group ns="$(arg namespace)" >
+    <include file="$(find turtlebot_launch)/launch/turtlebot3_rvizSim.launch">
+      <arg name="model" value="$(arg model)" />
+      <arg name="namespace" value="$(arg namespace)" />
+      <arg name="spawn_gazebo" value="$(arg spawn_gazebo)" />
+      <arg name="x_pos" value="$(arg x_pos)"/>
+      <arg name="y_pos" value="$(arg y_pos)"/>
+      <arg name="z_pos" value="$(arg z_pos)"/>
+      <arg name="yaw"   value="$(arg yaw)"/>
+      <arg name="dynamics_model"   value="$(arg dynamics_model)"/>
+    </include>
+
+    <!-- Run the goal to goal control -->
+    <node pkg="controllers" type="simple_go_to_goal" name="go_to_goal"  output="screen" unless="$(arg run_joystick)">
+        <param name="nominal_velocity" value="0.5" />
+        <param name="trans_vel_gain" value="0.5" />
+        <param name="rot_vel_gain" value="1.0" />
+
+        <remap from="/cmd_vel" to="$(arg namespace)/cmd_vel" />
+        <remap from="goal" to="$(arg goal_topic)" />
+        <remap from="odom" to="$(arg namespace)/odom" />
+    </node>
+  </group>
+
+
+
+</launch>

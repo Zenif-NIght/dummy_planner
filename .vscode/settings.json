@@ -3,5 +3,9 @@
         "*.tcc": "cpp",
         "deque": "cpp",
         "vector": "cpp"
-    }
+    },
+    "python.autoComplete.extraPaths": [
+        "/home/zenif/ros_workspace/lab6/catkin_ws/devel/lib/python2.7/dist-packages",
+        "/opt/ros/melodic/lib/python2.7/dist-packages"
+    ]
 }
