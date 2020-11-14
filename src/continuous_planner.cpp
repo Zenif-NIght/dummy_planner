@@ -2,11 +2,12 @@
 
 #include "nav_msgs/GetPlan.h"
 
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/transform_listener.h>
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-
 using namespace dummy_planner;
+
+namespace global{
+    tf2_ros::Buffer tf_buffer;
+    tf2_ros::TransformListener tf_listener(tf_buffer);
+}
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
     m_latest_odom = msg;
@@ -17,11 +18,27 @@ bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose) {
     bool received = false; // Default is that no pose has been received
     if(m_latest_odom) {
         // Populate the header
-        pose.header.stamp = m_latest_odom->header.stamp;
-        pose.header.frame_id = m_latest_odom->header.frame_id;
+
+        geometry_msgs::PoseStamped temp_pose = pose;
+        temp_pose.header.stamp = m_latest_odom->header.stamp;
+        temp_pose.header.frame_id = m_latest_odom->header.frame_id;
 		
 		// put the pose from the latest odometry into the pose variable
-        pose.pose = m_latest_odom->pose.pose;
+        temp_pose.pose = m_latest_odom->pose.pose;
+
+        // //Set Real pose
+        // pose.header.stamp = m_latest_odom->header.stamp;
+        // pose.header.frame_id = m_latest_odom->header.frame_id;
+        try 
+        {
+            pose = global::tf_buffer.transform<geometry_msgs::PoseStamped>(temp_pose,temp_pose.header.frame_id,ros::Duration(1.0));
+                
+        } 
+        catch (tf2::TransformException &ex) 
+        {
+            ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
+        }
+        
         received = true; // Indicate that the pose was received
     }
     return received;
@@ -31,9 +48,6 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "planner_continuous_node");
     ros::start();
     ros::NodeHandle n;
-
-    tf2_ros::Buffer tf_buffer;
-    tf2_ros::TransformListener tf_listener(tf_buffer);
 
 	// Initialize the continuous planner
     ContinuousPlanner planner;
