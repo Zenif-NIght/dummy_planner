@@ -2,6 +2,10 @@
 
 #include "nav_msgs/GetPlan.h"
 
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+
 using namespace dummy_planner;
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
@@ -28,11 +32,14 @@ int main(int argc, char** argv) {
     ros::start();
     ros::NodeHandle n;
 
+    tf2_ros::Buffer tf_buffer;
+    tf2_ros::TransformListener tf_listener(tf_buffer);
+
 	// Initialize the continuous planner
     ContinuousPlanner planner;
 	
 	// Create the subscription to the odometry message
-    ros::Subscriber sub_odom = n.subscribe("odom", //robot1/odom
+    ros::Subscriber sub_odom = n.subscribe("goal", //robot1/odom
                                             1000,
                                             &ContinuousPlanner::odomCallback,
                                             &planner); 
