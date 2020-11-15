@@ -5,6 +5,9 @@
 #include "nav_msgs/Path.h"
 // #include "nav_msgs/Path.h"
 
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 /*!
  A service server which creates a plan consisting of the starting and end points
@@ -12,7 +15,8 @@
  \param res The planned path
  */
 bool createDummyPlan(nav_msgs::GetPlan::Request & req,
-                     nav_msgs::GetPlan::Response & res) {
+                     nav_msgs::GetPlan::Response & res){//,
+                    //  tf2_ros::Buffer &tf_buffer) {
     // Create the plan header
     res.plan.header.stamp = ros::Time::now();               // Set the time stamp to the current ros time
     res.plan.header.frame_id = req.start.header.frame_id;   // Use the frame from the starting point
@@ -21,6 +25,19 @@ bool createDummyPlan(nav_msgs::GetPlan::Request & req,
     res.plan.poses.emplace_back(req.start);
 
     // Add the ending point
+    // geometry_msgs::PoseStamped temp_pose =req.start;
+    // try 
+    // {
+    //     temp_pose = tf_buffer.transform<geometry_msgs::PoseStamped>(
+    //         temp_pose,
+    //         temp_pose.header.frame_id,
+    //         ros::Duration(1.0));
+            
+    // } 
+    // catch (tf2::TransformException &ex) 
+    // {
+    //     ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
+    // }
     res.plan.poses.emplace_back(req.goal);
     return true;
 }
