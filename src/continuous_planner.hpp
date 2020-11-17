@@ -22,7 +22,7 @@ public:
      */
     void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
     
-    void goalCallback(const geometry_msgs::PoseStamped& msg);
+    void goalCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
     
     /*!
      * \brief getLatestPose Uses the latest odometry message to populate the pose information
@@ -30,13 +30,15 @@ public:
      * \return true if the pose is populated, false otherwise
      */
     bool getLatestPose(geometry_msgs::PoseStamped & pose, tf2_ros::Buffer &tf_buffer_hpp);
+    bool getLatestGoal(geometry_msgs::PoseStamped & pose);
+
 
 private:
     /*!
      * \brief m_latest_odom is a pointer to the latest odometry message received
      */
      nav_msgs::Odometry::ConstPtr m_latest_odom;
-     geometry_msgs::PoseStamped m_latest_goal;
+     geometry_msgs::PoseStamped::ConstPtr m_latest_goal;
 };
 
 }

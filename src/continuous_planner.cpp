@@ -8,7 +8,7 @@ using namespace dummy_planner;
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
     m_latest_odom = msg;
 }
-void ContinuousPlanner::goalCallback(const geometry_msgs::PoseStamped& msg) {
+void ContinuousPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     m_latest_goal = msg;
 }
 
@@ -47,6 +47,19 @@ bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose,tf2_ros::
     return received;
 }
 
+bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped &pose) {
+    // Check to see if the pose has been received
+    bool received = false; // Default is that no pose has been received
+    if(m_latest_goal) {
+        // Populate the header
+        pose.header.stamp = m_latest_goal->header.stamp;
+        pose.header.frame_id = m_latest_goal->header.frame_id;
+        pose.pose = m_latest_goal->pose;
+        received = true; // Indicate that the pose was received
+    }
+    return received;
+}
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "planner_continuous_node");
     ros::start();
@@ -59,7 +72,11 @@ int main(int argc, char** argv) {
     ContinuousPlanner planner;
 	
 	// Create the subscription to the odometry message
-    ros::Subscriber sub_odom = n.subscribe("goal", //robot1/odom
+    ros::Subscriber sub_odom = n.subscribe("odom", //robot1/odom
+                                            1000,
+                                            &ContinuousPlanner::odomCallback,//&ContinuousPlanner::odomCallback,//&ContinuousPlanner::goalCallback
+                                            &planner); 
+    ros::Subscriber sub_goal = n.subscribe("goal", //robot1/odom
                                             1000,
                                             &ContinuousPlanner::goalCallback,//&ContinuousPlanner::odomCallback,//&ContinuousPlanner::goalCallback
                                             &planner); 
@@ -70,9 +87,6 @@ int main(int argc, char** argv) {
     ROS_INFO("Ready to Publisher plan.");
     // Create the service request
     nav_msgs::GetPlan srv;
-    srv.request.goal.pose.position.x = 0;
-    srv.request.goal.pose.position.y = 0;
-    srv.request.goal.pose.position.z = 0;
 
     // Create the service client
     ros::ServiceClient client = n.serviceClient<nav_msgs::GetPlan>("dummy_plan");
@@ -84,21 +98,28 @@ int main(int argc, char** argv) {
         ros::spinOnce();
 
         // Call the service to get the plan
-        if(planner.getLatestPose(srv.request.goal, tf_buffer)) { // check to see if an odometry message has come in
+        if(planner.getLatestPose(srv.request.start, tf_buffer) && planner.getLatestGoal(srv.request.goal)) { // check to see if an odometry message has come in
             // Update the header information for the goal
-            srv.request.goal.header.frame_id = srv.request.start.header.frame_id;
-            srv.request.goal.header.stamp = srv.request.start.header.stamp;
-            // geometry_msgs::PoseStamped pose_out;
-            // try {
-            //     pose_out = tf_buffer.transform<geometry_msgs::PoseStamped>(
-            //         srv.request.goal,
-            //         srv.request.goal.header.frame_id,
-            //         ros::Duration(1.0)
-            //         );
-            //     srv.request.goal =pose_out;
-            // } catch (tf2::TransformException &ex) {
-            //     ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
-            // }
+            geometry_msgs::PoseStamped pose_out;
+            try {
+                pose_out = tf_buffer.transform<geometry_msgs::PoseStamped>(
+                    srv.request.start,
+                    "map",
+                    ros::Duration(1.0)
+                    );
+                srv.request.start = pose_out;
+            } catch (tf2::TransformException &ex) {
+                ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
+            }
+            try {
+                srv.request.goal = tf_buffer.transform<geometry_msgs::PoseStamped>(
+                    srv.request.goal,
+                    "map",
+                    ros::Duration(1.0)
+                    );
+            } catch (tf2::TransformException &ex) {
+                ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
+            }
 
             // Make the service request
             if(client.call(srv)) {
