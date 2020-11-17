@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
                                             &planner); 
     ros::Subscriber sub_goal = n.subscribe("goal", //robot1/odom
                                             1000,
-                                            &ContinuousPlanner::goalCallback,//&ContinuousPlanner::odomCallback,//&ContinuousPlanner::goalCallback
+                                            &ContinuousPlanner::goalCallback,
                                             &planner); 
     ROS_INFO("Ready to Subscriber to odom.");                                        
 
