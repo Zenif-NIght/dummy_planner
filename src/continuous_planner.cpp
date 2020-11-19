@@ -38,10 +38,54 @@ bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped &pose) {
     return received;
 }
 
+void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, 
+                            const geometry_msgs::PoseStamped & pnt2,
+                            double look_ahead,
+                            geometry_msgs::PoseStamped & result)
+{
+    // Calculate the distance between points
+    geometry_msgs::Vector3 diff;
+    diff.x = pnt2.pose.position.x - pnt1.pose.position.x;
+    diff.y = pnt2.pose.position.y - pnt1.pose.position.y;
+    diff.z = pnt2.pose.position.z - pnt1.pose.position.z;
+    double dist = std::sqrt( diff.x*diff.x + diff.y*diff.y + diff.z*diff.z );
+
+    // If distance is less than the look_ahead then we only care about point 2
+    if (dist < look_ahead) {
+        result = pnt2;
+        return;
+    }
+
+    // Get the unit vector between the two points
+    geometry_msgs::Vector3 unit;
+    unit.x = diff.x / dist;
+    unit.y = diff.y / dist;
+    unit.z = diff.z / dist;
+
+    // Calculate the new point
+    result = pnt1;
+    result.pose.position.x += unit.x*look_ahead;
+    result.pose.position.y += unit.y*look_ahead;
+    result.pose.position.z += unit.z*look_ahead;
+}
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "planner_continuous_node");
     ros::start();
     ros::NodeHandle n;
+
+    double look_ahead_dub =0.0;
+    const std::string LOOK_AHEAD = "look_ahead";
+    if (n.hasParam(LOOK_AHEAD))
+    {
+        if (n.getParam("/look_ahead", look_ahead_dub))
+        {
+            ROS_INFO("The service Param \"look_ahead\"was found");
+        }
+    }
+    else{
+        ROS_WARN_THROTTLE(1, "The service Param \"look_ahead\" was NOT be found!");
+    }
 
     static tf2_ros::Buffer tf_buffer;
     static tf2_ros::TransformListener tf_listener(tf_buffer);
@@ -63,11 +107,11 @@ int main(int argc, char** argv) {
     // Create the publisher to publish the navigation path (use the n.advertize)
     ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("path",1000); //robot1/path
     ROS_INFO("Ready to Publisher plan.");
+    
+    ros::Publisher pup_look_ahead_point = n.advertise<geometry_msgs::PoseStamped>("look_ahead_point",1000);
+    geometry_msgs::PoseStamped look_ahead_point;    
     // Create the service request
     nav_msgs::GetPlan srv;
-    srv.request.goal.pose.position.x = 0;
-    srv.request.goal.pose.position.y = 0;
-    srv.request.goal.pose.position.z = 0;
 
     // Create the service client
     ros::ServiceClient client = n.serviceClient<nav_msgs::GetPlan>("dummy_plan");
@@ -90,22 +134,27 @@ int main(int argc, char** argv) {
                     );
                 srv.request.start = pose_out;
             } catch (tf2::TransformException &ex) {
-                ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
+                ROS_WARN_THROTTLE(1, "WARN 1: Could not transform to map frame: %s", ex.what());
             }
             try {
-                srv.request.goal = tf_buffer.transform<geometry_msgs::PoseStamped>(
+                pose_out = tf_buffer.transform<geometry_msgs::PoseStamped>(
                     srv.request.goal,
                     "map",
                     ros::Duration(1.0)
                     );
+                srv.request.goal = pose_out;
+                // get the look ahead point 
+                calculateLookAheadPoint(srv.request.start,srv.request.goal,0.75,look_ahead_point);
+
             } catch (tf2::TransformException &ex) {
-                ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
+                ROS_WARN_THROTTLE(1, "WARN 2: Could not transform to map frame: %s", ex.what());
             }
 
             // Make the service request
             if(client.call(srv)) {
                 // Publish the planned path
                 pub_plan.publish(srv.response.plan);
+                pup_look_ahead_point.publish(look_ahead_point); //geometry_msgs::PoseStamped
             } else {
                 ROS_WARN_THROTTLE(1, "The service could not be connected");
             }

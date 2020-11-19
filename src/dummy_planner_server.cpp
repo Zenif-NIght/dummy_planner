@@ -25,20 +25,8 @@ bool createDummyPlan(nav_msgs::GetPlan::Request & req,
     res.plan.poses.emplace_back(req.start);
 
     // Add the ending point
-    // geometry_msgs::PoseStamped temp_pose =req.start;
-    // try 
-    // {
-    //     temp_pose = tf_buffer.transform<geometry_msgs::PoseStamped>(
-    //         temp_pose,
-    //         temp_pose.header.frame_id,
-    //         ros::Duration(1.0));
-            
-    // } 
-    // catch (tf2::TransformException &ex) 
-    // {
-    //     ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
-    // }
     res.plan.poses.emplace_back(req.goal);
+
     return true;
 }
 

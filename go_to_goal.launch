@@ -43,6 +43,7 @@
     <node pkg="dummy_planner" type="dummy_planner_server" name="dummy_planner_node"  output="screen">
      </node>
     <node pkg="dummy_planner" type="continuous_planner" name="planner_continuous_node"  output="screen">
+      <param name="look_ahead" value="0.5" />
       <remap from="goal" to="/move_base_simple/goal" />
     </node> 
   </group >
