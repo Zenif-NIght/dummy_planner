@@ -236,7 +236,7 @@ Visualization Manager:
         X: 0
         Y: 0
         Z: 0
-      Pose Color: 255; 85; 255
+      Pose Color: 0; 0; 255;
       Pose Style: None
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
@@ -246,7 +246,7 @@ Visualization Manager:
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 0; 0; 0
+    Background Color: 200; 200; 200
     Default Light: true
     Fixed Frame: robot1/odom
     Frame Rate: 30

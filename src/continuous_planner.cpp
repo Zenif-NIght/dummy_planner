@@ -19,31 +19,9 @@ bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose,tf2_ros::
         // Populate the header
         pose.header.stamp = m_latest_odom->header.stamp;
         pose.header.frame_id = m_latest_odom->header.frame_id;
-		// try {
-        //     pose_out = tf_buffer.transform<geometry_msgs::PoseStamped>(pose_in, frame_id, ros::Duration(1.0));
-        // } catch (tf2::TransformException &ex) {
-        //     ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
-        // }
-		// put the pose from the latest odometry into the pose variable
         pose.pose = m_latest_odom->pose.pose;
         received = true; // Indicate that the pose was received
     }
-    // else {
-    //     // if(m_latest_goal)
-    //             // Populate the header
-    //     pose.header.stamp = m_latest_goal.header.stamp;
-    //     pose.header.frame_id = m_latest_goal.header.frame_id;
-    //     ROS_INFO("frame_id: "+pose.header.frame_id);
-    //     // ROS_INFO(pose.header.frame_id);
-	// 	// try {
-    //     //     pose_out = tf_buffer.transform<geometry_msgs::PoseStamped>(pose_in, frame_id, ros::Duration(1.0));
-    //     // } catch (tf2::TransformException &ex) {
-    //     //     ROS_WARN_THROTTLE(1, "Could not transform to map frame: %s", ex.what());
-    //     // }
-	// 	// put the pose from the latest odometry into the pose variable
-    //     pose.pose = m_latest_goal.pose;
-    //     received = true; // Indicate that the pose was received
-    // }
     return received;
 }
 
@@ -74,7 +52,7 @@ int main(int argc, char** argv) {
 	// Create the subscription to the odometry message
     ros::Subscriber sub_odom = n.subscribe("odom", //robot1/odom
                                             1000,
-                                            &ContinuousPlanner::odomCallback,//&ContinuousPlanner::odomCallback,//&ContinuousPlanner::goalCallback
+                                            &ContinuousPlanner::odomCallback,
                                             &planner); 
     ros::Subscriber sub_goal = n.subscribe("goal", //robot1/odom
                                             1000,
@@ -87,6 +65,9 @@ int main(int argc, char** argv) {
     ROS_INFO("Ready to Publisher plan.");
     // Create the service request
     nav_msgs::GetPlan srv;
+    srv.request.goal.pose.position.x = 0;
+    srv.request.goal.pose.position.y = 0;
+    srv.request.goal.pose.position.z = 0;
 
     // Create the service client
     ros::ServiceClient client = n.serviceClient<nav_msgs::GetPlan>("dummy_plan");

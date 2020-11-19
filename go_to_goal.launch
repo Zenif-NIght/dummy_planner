@@ -41,11 +41,8 @@
   <!-- Create Vehicle -->
   <group ns="/robot1/" >
     <node pkg="dummy_planner" type="dummy_planner_server" name="dummy_planner_node"  output="screen">
-      <!-- <remap from="goal" to="/robot1/odem" /> -->
-    </node>
+     </node>
     <node pkg="dummy_planner" type="continuous_planner" name="planner_continuous_node"  output="screen">
-     <!-- <remap from="/move_base_simple/goal" to="goal" /> -->
-     <!-- <remap from="dummy_planner_node" to="/robot1/odem" /> -->
       <remap from="goal" to="/move_base_simple/goal" />
     </node> 
   </group >
