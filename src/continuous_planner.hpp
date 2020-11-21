@@ -15,7 +15,7 @@
 namespace dummy_planner {
 class ContinuousPlanner {
 public:
-    ContinuousPlanner(){}
+    ContinuousPlanner(const std::string & map_frame_id);
 
     /*!
      * This function will be used to store odometry messages
@@ -33,12 +33,34 @@ public:
     bool getLatestGoal(geometry_msgs::PoseStamped & pose);
 
 
+    /*!
+     * \brief map_frame_id the frame_id of the map
+     */
+    const std::string m_map_frame_id;
+
+    //brief latest_transformed_goal stores the transformed goal
+    geometry_msgs::PoseStamped m_latest_transformed_goal;
+
 private:
     /*!
      * \brief m_latest_odom is a pointer to the latest odometry message received
      */
-     nav_msgs::Odometry::ConstPtr m_latest_odom;
-     geometry_msgs::PoseStamped::ConstPtr m_latest_goal;
+    nav_msgs::Odometry::ConstPtr m_latest_odom;
+    geometry_msgs::PoseStamped::ConstPtr m_latest_goal;     
+    //brief flag_goal_transformed flag storing whether or not the goal has been transformed
+    bool m_flag_goal_transformed;
+
+    // /*!
+    //  * \brief tf_buffer The transform buffer used to make transforms
+    //  */
+    // tf2_ros::Buffer m_tf_buffer;
+
+    // /*!
+    //  * \brief tf_listener The transform listener
+    //  */
+    // tf2_ros::TransformListener m_tf_listener;
+
+
 };
 
 }

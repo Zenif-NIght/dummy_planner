@@ -4,12 +4,19 @@
 
 using namespace dummy_planner;
 
+ContinuousPlanner::ContinuousPlanner(const std::string & map_frame_id) :
+    m_map_frame_id(map_frame_id),
+    m_flag_goal_transformed(false)
+    // tf_listener(m_tf_buffer)
+{}
+
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
     m_latest_odom = msg;
 }
 void ContinuousPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     m_latest_goal = msg;
+    m_flag_goal_transformed = false;
 }
 
 bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose,tf2_ros::Buffer &tf_buffer) {
@@ -28,12 +35,18 @@ bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose,tf2_ros::
 bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped &pose) {
     // Check to see if the pose has been received
     bool received = false; // Default is that no pose has been received
-    if(m_latest_goal) {
+    
+    if(m_flag_goal_transformed) {
+        pose = m_latest_transformed_goal;
+        received = true;
+    }
+    else if(m_latest_goal) {
         // Populate the header
         pose.header.stamp = m_latest_goal->header.stamp;
         pose.header.frame_id = m_latest_goal->header.frame_id;
         pose.pose = m_latest_goal->pose;
         received = true; // Indicate that the pose was received
+        m_flag_goal_transformed = true;
     }
     return received;
 }
@@ -73,14 +86,18 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "planner_continuous_node");
     ros::start();
     ros::NodeHandle n;
+    ros::NodeHandle nL("~");
 
     double look_ahead_dub =0.0;
     const std::string LOOK_AHEAD = "look_ahead";
-    if (n.hasParam(LOOK_AHEAD))
+    if (nL.hasParam(LOOK_AHEAD))
     {
-        if (n.getParam("/look_ahead", look_ahead_dub))
+        if (nL.getParam(LOOK_AHEAD, look_ahead_dub))
         {
             ROS_INFO("The service Param \"look_ahead\"was found");
+        }
+        else{
+             ROS_WARN_THROTTLE(1, "The service Param \"look_ahead\" was found. BUT we could not get its value!");
         }
     }
     else{
@@ -91,7 +108,7 @@ int main(int argc, char** argv) {
     static tf2_ros::TransformListener tf_listener(tf_buffer);
 
 	// Initialize the continuous planner
-    ContinuousPlanner planner;
+    ContinuousPlanner planner("map");
 	
 	// Create the subscription to the odometry message
     ros::Subscriber sub_odom = n.subscribe("odom", //robot1/odom
@@ -142,9 +159,10 @@ int main(int argc, char** argv) {
                     "map",
                     ros::Duration(1.0)
                     );
+                planner.m_latest_transformed_goal = pose_out;
                 srv.request.goal = pose_out;
                 // get the look ahead point 
-                calculateLookAheadPoint(srv.request.start,srv.request.goal,0.75,look_ahead_point);
+                calculateLookAheadPoint(srv.request.start,srv.request.goal,look_ahead_dub,look_ahead_point);
 
             } catch (tf2::TransformException &ex) {
                 ROS_WARN_THROTTLE(1, "WARN 2: Could not transform to map frame: %s", ex.what());
