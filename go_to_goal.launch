@@ -4,7 +4,7 @@
   <arg name="run_sim" default="true"/> <!-- true => the simulation nodes will be run, only needs to be done for a single vehicle -->
   <arg name="run_rviz" default="true"/> <!-- true => open rviz, only needs to be done for a single vehicle -->
   <arg name="run_joystick" default="false"/> <!-- true => use the joystick node, false => use go-to-goal controller -->
-  <arg name="spawn_gazebo" default="false" /> <!-- true => use gazebo for the physics engine, false => use simple physics -->
+  <arg name="spawn_gazebo" default="true" /> <!-- true => use gazebo for the physics engine, false => use simple physics -->
   <arg name="x_pos" default="-7.0"/> <!-- Pose of vehicle at start -->
   <arg name="y_pos" default="-1.0"/>
   <arg name="z_pos" default=" 0.0"/>
@@ -43,7 +43,7 @@
     <node pkg="dummy_planner" type="dummy_planner_server" name="dummy_planner_node"  output="screen">
      </node>
     <node pkg="dummy_planner" type="continuous_planner" name="planner_continuous_node"  output="screen">
-      <param name="look_ahead" value="0.5" />
+      <param name="look_ahead" value="0.75" />
       <remap from="goal" to="/move_base_simple/goal" />
     </node> 
   </group >

@@ -1,55 +1,110 @@
 #include "./continuous_planner.hpp"
 
 #include "nav_msgs/GetPlan.h"
+#include <tf2_ros/transform_listener.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 using namespace dummy_planner;
 
 ContinuousPlanner::ContinuousPlanner(const std::string & map_frame_id) :
-    m_map_frame_id(map_frame_id),
-    m_flag_goal_transformed(false)
-    // tf_listener(m_tf_buffer)
+    map_frame_id(map_frame_id),
+    m_flag_goal_transformed(false),
+    m_tf_listener(m_tf_buffer)
 {}
 
-
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
-    m_latest_odom = msg;
-}
-void ContinuousPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-    m_latest_goal = msg;
-    m_flag_goal_transformed = false;
+    m_latest_odom = msg;    
 }
 
-bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose,tf2_ros::Buffer &tf_buffer) {
-    // Check to see if the pose has been received
-    bool received = false; // Default is that no pose has been received
-    if(m_latest_odom) {
-        // Populate the header
-        pose.header.stamp = m_latest_odom->header.stamp;
-        pose.header.frame_id = m_latest_odom->header.frame_id;
-        pose.pose = m_latest_odom->pose.pose;
-        received = true; // Indicate that the pose was received
-    }
-    return received;
+void ContinuousPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg) {
+    m_latest_goal = msg; // Store the goal
+    m_flag_goal_transformed = false; // Indicate that the newest goal needs to be transformed
+}
+void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg) {
+    m_latest_scan = msg;
 }
 
-bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped &pose) {
-    // Check to see if the pose has been received
-    bool received = false; // Default is that no pose has been received
-    
+bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped & pose) {
+    bool received = false; // Default to not received yet
+
+    // Check to see if the goal has already been transformed
     if(m_flag_goal_transformed) {
         pose = m_latest_transformed_goal;
         received = true;
     }
+    // Check to see if the goal has been received
     else if(m_latest_goal) {
-        // Populate the header
-        pose.header.stamp = m_latest_goal->header.stamp;
-        pose.header.frame_id = m_latest_goal->header.frame_id;
-        pose.pose = m_latest_goal->pose;
-        received = true; // Indicate that the pose was received
-        m_flag_goal_transformed = true;
+        // Transform the goal pose to the latest map frame
+        try {
+            // Transform the goal
+            m_latest_transformed_goal = m_tf_buffer.transform<geometry_msgs::PoseStamped>(
+                *m_latest_goal, 
+                map_frame_id, 
+                ros::Duration(1.0)
+                );
+            m_flag_goal_transformed = true;
+            pose = m_latest_transformed_goal;
+            // Indicate that the goal has been received
+            received = true;
+        } catch (tf2::TransformException &ex) {
+            ROS_WARN_THROTTLE(1, "ContinuousPlanner::getLatestGoal() Could not transform to map frame: %s", ex.what());
+            received = false;
+        }
     }
     return received;
 }
+
+bool ContinuousPlanner::getLatestPose(geometry_msgs::PoseStamped &pose) {
+    // Check to see if the pose has been received
+    bool received = false; // Default is that no pose has been received
+    if(m_latest_odom) {
+        // Create a stamped pose from the odometry
+        geometry_msgs::PoseStamped odom;
+        odom.header.stamp = m_latest_odom->header.stamp;
+        odom.header.frame_id = m_latest_odom->header.frame_id;
+        odom.pose = m_latest_odom->pose.pose;
+
+        // Transform the odometry into the new map frame
+        try {
+            pose = m_tf_buffer.transform<geometry_msgs::PoseStamped>(
+                odom,
+                map_frame_id, 
+                ros::Duration(1.0)
+                );
+            received  = true;
+        } catch (tf2::TransformException &ex) {
+            ROS_WARN_THROTTLE(1, "WARN 1: ContinuousPlanner::getLatestPose() Could not transform to map frame: %s", ex.what());
+            received = false;
+        }
+    }
+    return received;
+}
+
+// bool ContinuousPlanner::getLatestScan(geometry_msgs::PoseStamped &pose) {
+//     // Check to see if the pose has been received
+//     bool received = false; // Default is that no pose has been received
+//     if(m_latest_odom) {
+//         // Create a stamped pose from the odometry
+//         geometry_msgs::PoseStamped odom;
+//         odom.header.stamp = m_latest_odom->header.stamp;
+//         odom.header.frame_id = m_latest_odom->header.frame_id;
+//         odom.pose = m_latest_odom->pose.pose;
+
+//         // Transform the odometry into the new map frame
+//         try {
+//             pose = m_tf_buffer.transform<geometry_msgs::PoseStamped>(
+//                 odom,
+//                 map_frame_id, 
+//                 ros::Duration(1.0)
+//                 );
+//             received  = true;
+//         } catch (tf2::TransformException &ex) {
+//             ROS_WARN_THROTTLE(1, "WARN 1: ContinuousPlanner::getLatestPose() Could not transform to map frame: %s", ex.what());
+//             received = false;
+//         }
+//     }
+//     return received;
+// }
 
 void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, 
                             const geometry_msgs::PoseStamped & pnt2,
@@ -104,34 +159,29 @@ int main(int argc, char** argv) {
         ROS_WARN_THROTTLE(1, "The service Param \"look_ahead\" was NOT be found!");
     }
 
-    static tf2_ros::Buffer tf_buffer;
-    static tf2_ros::TransformListener tf_listener(tf_buffer);
-
-	// Initialize the continuous planner
+    // Create the subscription to the odometry message
     ContinuousPlanner planner("map");
-	
-	// Create the subscription to the odometry message
-    ros::Subscriber sub_odom = n.subscribe("odom", //robot1/odom
-                                            1000,
-                                            &ContinuousPlanner::odomCallback,
-                                            &planner); 
-    ros::Subscriber sub_goal = n.subscribe("goal", //robot1/odom
-                                            1000,
-                                            &ContinuousPlanner::goalCallback,
-                                            &planner); 
-    ROS_INFO("Ready to Subscriber to odom.");                                        
+    ros::Subscriber sub_odom = n.subscribe("odom",
+                                            1, 
+                                            &ContinuousPlanner::odomCallback, 
+                                            &planner);
 
-    // Create the publisher to publish the navigation path (use the n.advertize)
-    ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("path",1000); //robot1/path
-    ROS_INFO("Ready to Publisher plan.");
-    
+    // Create a subscription to the goal message
+    ros::Subscriber sub_goal = n.subscribe("goal", 
+                                            1, 
+                                            &ContinuousPlanner::goalCallback,
+                                            &planner);
+
+    ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("path",1);                                        
+
+    // Create the publisher to publish the navigation path
+    // ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("plan", 1);
+
     ros::Publisher pup_look_ahead_point = n.advertise<geometry_msgs::PoseStamped>("look_ahead_point",1000);
-    geometry_msgs::PoseStamped look_ahead_point;    
-    // Create the service request
-    nav_msgs::GetPlan srv;
+    geometry_msgs::PoseStamped look_ahead_point;   
 
     // Create the service client
-    ros::ServiceClient client = n.serviceClient<nav_msgs::GetPlan>("dummy_plan");
+    ros::ServiceClient client = n.serviceClient<nav_msgs::GetPlan>("final_plan");
 
     // Run the program at 10 hz
     ros::Rate rate(10);
@@ -139,35 +189,23 @@ int main(int argc, char** argv) {
         // Process any callbacks
         ros::spinOnce();
 
+        // Check inputs
+        nav_msgs::GetPlan srv;
+        bool goal_received = planner.getLatestGoal(srv.request.goal);
+        bool pose_received = planner.getLatestPose(srv.request.start);
+        if(!goal_received) {
+            ROS_WARN_THROTTLE(10, "No goal yet received");
+        }
+        if (!pose_received) {
+            ROS_WARN_THROTTLE(10, "No odometry has been received");
+        }
+
+        // get the look ahead point 
+        calculateLookAheadPoint(srv.request.start,srv.request.goal,look_ahead_dub,look_ahead_point);
+
+
         // Call the service to get the plan
-        if(planner.getLatestPose(srv.request.start, tf_buffer) && planner.getLatestGoal(srv.request.goal)) { // check to see if an odometry message has come in
-            // Update the header information for the goal
-            geometry_msgs::PoseStamped pose_out;
-            try {
-                pose_out = tf_buffer.transform<geometry_msgs::PoseStamped>(
-                    srv.request.start,
-                    "map",
-                    ros::Duration(1.0)
-                    );
-                srv.request.start = pose_out;
-            } catch (tf2::TransformException &ex) {
-                ROS_WARN_THROTTLE(1, "WARN 1: Could not transform to map frame: %s", ex.what());
-            }
-            try {
-                pose_out = tf_buffer.transform<geometry_msgs::PoseStamped>(
-                    srv.request.goal,
-                    "map",
-                    ros::Duration(1.0)
-                    );
-                planner.m_latest_transformed_goal = pose_out;
-                srv.request.goal = pose_out;
-                // get the look ahead point 
-                calculateLookAheadPoint(srv.request.start,srv.request.goal,look_ahead_dub,look_ahead_point);
-
-            } catch (tf2::TransformException &ex) {
-                ROS_WARN_THROTTLE(1, "WARN 2: Could not transform to map frame: %s", ex.what());
-            }
-
+        if(goal_received && pose_received) {
             // Make the service request
             if(client.call(srv)) {
                 // Publish the planned path
@@ -176,9 +214,6 @@ int main(int argc, char** argv) {
             } else {
                 ROS_WARN_THROTTLE(1, "The service could not be connected");
             }
-
-        } else {
-            ROS_WARN_THROTTLE(1, "No odometry has been received");
         }
     }
 }
