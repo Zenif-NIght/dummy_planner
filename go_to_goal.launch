@@ -4,7 +4,7 @@
   <arg name="run_sim" default="true"/> <!-- true => the simulation nodes will be run, only needs to be done for a single vehicle -->
   <arg name="run_rviz" default="true"/> <!-- true => open rviz, only needs to be done for a single vehicle -->
   <arg name="run_joystick" default="false"/> <!-- true => use the joystick node, false => use go-to-goal controller -->
-  <arg name="spawn_gazebo" default="true" /> <!-- true => use gazebo for the physics engine, false => use simple physics -->
+  <arg name="spawn_gazebo" default="false" /> <!-- true => use gazebo for the physics engine, false => use simple physics -->
   <arg name="x_pos" default="-7.0"/> <!-- Pose of vehicle at start -->
   <arg name="y_pos" default="-1.0"/>
   <arg name="z_pos" default=" 0.0"/>
@@ -25,7 +25,7 @@
 
       <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_launch)/rviz/Proj2.rviz" if="$(arg run_rviz)"/> -->
       <node name="rviz" pkg="rviz" type="rviz" args="-d $(find dummy_planner)/dummy_proj.rviz" if="$(arg run_rviz)"/>
-
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find occupancy_grid)/rviz/Proj4.rviz" if="$(arg run_rviz)"/> -->
       <!-- Run the Joystick listener and control -->
       <group if="$(arg run_joystick)">
           <node name="joy" pkg="joy" type="joy_node">
