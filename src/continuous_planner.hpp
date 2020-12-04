@@ -43,11 +43,23 @@ public:
      * \return
      */
     bool getLatestGoal(geometry_msgs::PoseStamped & pose);
+    
+    // /*!
+    //  * \brief getLatestScan Returns the latest scan pose in the robot frame
+    //  * \param scan Latest goal scan
+    //  * \return
+    //  */
+    // bool getLatestScan(sensor_msgs::LaserScan &scan);
 
     /*!
      * \brief map_frame_id the frame_id of the map
      */
     const std::string map_frame_id;
+
+    /*!
+     * \brief m_latest_scan stores the scan data
+     */
+    sensor_msgs::LaserScan::ConstPtr latest_scan;
 
 private:
     /*!
@@ -65,10 +77,6 @@ private:
      */
     geometry_msgs::PoseStamped m_latest_transformed_goal;
 
-    /*!
-     * \brief m_latest_scan stores the scan data
-     */
-    sensor_msgs::LaserScan::ConstPtr m_latest_scan;
 
     /*!
      * \brief flag_goal_transformed flag storing whether or not the goal has been transformed
