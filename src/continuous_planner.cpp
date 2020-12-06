@@ -7,6 +7,9 @@
 #include "GoToGoalField.hpp"
 #include "OrbitAvoidField.hpp"
 #include "AvoidObstacle.hpp"
+#include "SummedFields.hpp"
+
+#include <eigen3/Eigen/Dense>
 
 using namespace dummy_planner;
 
@@ -135,9 +138,11 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1,
 
     //         % Go to goal variables
     //     x_g =  [20; 5]; %[16; 10]; % try [20; 5]; [25; 5];
-    geometry_msgs::Point x_g;
-    x_g.x = result.pose.position.x;
-    x_g.y = result.pose.position.y;
+    // geometry_msgs::Point x_g;
+    // x_g.x = result.pose.position.x;
+    // x_g.y = result.pose.position.y;
+    Eigen::Vector2d x_g;
+    x_g << result.pose.position.x , result.pose.position.y;
         
     //     % Obstacle avoidance variables - orbit
     double S = 3; //% Sphere of influence
@@ -175,32 +180,29 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1,
     std::vector<int> avoid_indices(n_lines+1);
     for (int i = 0; i < n_lines+1; i++) {avoid_indices[i] = i+1;}
     
-    geometry_msgs::Point q_inf;
-    q_inf.x =10000000;
-    q_inf.y =10000000;
+    // q_inf = [10000000; 10000000];
+    Eigen::Vector2d q_inf;
+    q_inf << 10000000 , 10000000;
 
-    // const double v_max = 2;
-    // //     fields{1} = GoToGoalField(x_vec, y_vec, x_g, v_max);
-    // fields[0] = GoToGoalField( x_g, v_max);
-    // //     for k = avoid_indices
-    //         // fields{k} = OrbitAvoidField(x_vec, y_vec, q_inf, R, v_max, k_conv, S);  
-    // //         fields{k+veh.sensor.n_lines} = AvoidObstacle(x_vec, y_vec, q_inf, v_max);
-    // //         fields{k+veh.sensor.n_lines}.S = S_b;
-    // //         fields{k+veh.sensor.n_lines}.R = R_b;
-    // //     end
-    // for (int i : avoid_indices)
-    // {
-    //     fields[i] = OrbitAvoidField(q_inf, R, v_max, k_conv,S);
-    //     fields[i+n_lines] = AvoidObstacle( q_inf, v_max);
-    //     // fields[i+n_lines].S = S_b;
-    //     // fields[i+n_lines].R = R_b;
-    // }  
+    const double v_max = 2;
+    //     fields{1} = GoToGoalField(x_vec, y_vec, x_g, v_max);
+    fields[0] = GoToGoalField( x_g, v_max);
+    // for k = avoid_indices
+        // fields{k} = OrbitAvoidField(x_vec, y_vec, q_inf, R, v_max, k_conv, S);  
+        // fields{k+veh.sensor.n_lines} = AvoidObstacle(x_vec, y_vec, q_inf, v_max);
+    //     fields{k+veh.sensor.n_lines}.S = S_b;
+    //     fields{k+veh.sensor.n_lines}.R = R_b;
+    // end
+    for (int i : avoid_indices)
+    {
+        fields[i] = OrbitAvoidField(q_inf, R, v_max, k_conv,S);
+        fields[i+n_lines] = AvoidObstacle( q_inf, v_max, S_b, R_b);
+    }  
 
 
-    // //     % Create a combined vector field
-    // //     field = SummedFields(x_vec, y_vec, fields, weights, v_max);
-
-    // // field = SummedFields(x_vec, y_vec, fields, weights, v_max);
+    //     % Create a combined vector field
+    //     field = SummedFields(x_vec, y_vec, fields, weights, v_max);
+    field sfield = SummedFields(fields, weights, v_max);
     
     // //     % Create the scenario
     // //     obj = obj@VectorFieldScenario(field, veh, PolygonWorld1, control_type);
