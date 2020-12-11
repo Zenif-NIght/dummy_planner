@@ -1,3 +1,5 @@
+#pragma once
+
 #include "field.hpp"
 
 #include <eigen3/Eigen/Dense>
@@ -14,6 +16,7 @@ private:
 public:
     AvoidObstacle(const Eigen::Vector2d &x_o,double vmax, double S=5, double R=1);
     ~AvoidObstacle();
+    void set_x_o(const Eigen::Vector2d &q) { m_x_o = q; }
     Eigen::Vector2d getVector(int t, const Eigen::Vector2d& x, double th);
 };
 
