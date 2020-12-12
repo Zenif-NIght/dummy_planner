@@ -1,11 +1,14 @@
 #pragma once
 
+#include "ros/ros.h"
 #include <eigen3/Eigen/Dense>
 #include <vector>
+#include <sensor_msgs/LaserScan.h>
 
 #include "VehicleKinematics.hpp"
 #include "Sensor.hpp"
 #include "control_type.hpp"
+#include "vectorFollowingTypePoint.hpp"
 
 using namespace Eigen;
 using namespace std;
@@ -24,7 +27,7 @@ private:
     // Elements of the vehicle
     VehicleKinematics m_kinematics;
     Sensor m_sensor;
-    control_type m_control;
+    control_type *m_control;
 
     // Vehicle state
     int m_t = 0; // latest time value
@@ -42,7 +45,7 @@ private:
     vector<double> m_dist_latest; // distance to obstacle
 
 public:
-    Vehicle(VehicleKinematics kin, Sensor sens, control_type type, const vector<double> &xo);
+    Vehicle(VehicleKinematics kin, Sensor sens, control_type *type, const vector<double> &xo);
     VehicleKinematics kinematics() { return m_kinematics; }
     int x_ind() { return m_x_ind; }
     int y_ind() { return m_y_ind; }
@@ -69,16 +72,22 @@ public:
 // set q_ind, the coordinates
 void Vehicle::setQ()
 {
-    m_q << m_x[m_x_ind], m_x[m_y_ind];
+    // ROS_INFO_STREAM("setQ build");
+    // m_q << m_x[m_x_ind], m_x[m_y_ind];
+    m_q[0] = m_x[m_x_ind];
+    m_q[1] = m_x[m_y_ind];
+    // ROS_INFO("setQ done");
 }
 
-Vehicle::Vehicle(VehicleKinematics kin, Sensor sens, control_type type, const vector<double>& xo)
+Vehicle::Vehicle(VehicleKinematics kin, Sensor sens, control_type *type, const vector<double>& xo)
     : m_kinematics(kin), m_sensor(sens), m_control(type), m_x(xo)
 {
+    ROS_INFO("veh constructor");
     m_th_ind = m_kinematics.th_ind();
     m_x_ind = m_kinematics.x_ind();
     m_y_ind = m_kinematics.y_ind();
     setQ();
+    ROS_INFO("veh constructor done");
 }
 
 void Vehicle::setOrientation(double x, double y, double theta)
@@ -112,5 +121,5 @@ Vector2d Vehicle::getObstacle(int k)
 
 Vector2d Vehicle::vectorFieldControl(int t,field f,const vector<double>&x)
 {
-    return m_control.vectorFieldControl(*this,t,f,x);
+    return m_control->vectorFieldControl(*this,t,f,x);
 }

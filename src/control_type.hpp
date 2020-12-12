@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 // #include "Vehicle.hpp"
 #include "field.hpp"
 
@@ -13,26 +14,13 @@ class control_type
 private:
     /* data */
 public:
-    control_type(/* args */);
-    ~control_type();
-    Vector2d vectorFieldControl(
-        Vehicle veh,
+    control_type() {}
+    ~control_type() {}
+    
+    //Pure Virtual methods
+    virtual Vector2d vectorFieldControl(
+        Vehicle &veh,
         int t, 
-        field f,
-        const vector<double> &x);
+        field &f,
+        const vector<double> &x) = 0;
 };
-
-control_type::control_type(/* args */)
-{
-}
-
-control_type::~control_type()
-{
-}
-
-Vector2d control_type::vectorFieldControl(
-        Vehicle veh,
-        int t, 
-        field f,
-        const vector<double> &x)
-{return Vector2d(0,0);}

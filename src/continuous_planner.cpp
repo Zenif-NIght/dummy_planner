@@ -3,15 +3,16 @@
 #include "nav_msgs/GetPlan.h"
 #include <tf2_ros/transform_listener.h>
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#include <tf2/LinearMath/Quaternion.h>
+//#include <tf2/LinearMath/Quaternion.h>
 #include <tf/tf.h>
 
 #include "SummedFields.hpp"
-#include "BetterUnicycleKinematics.hpp"
 #include "BetterUnicycleVehicle.hpp"
 #include "RangeSensor.hpp"
 #include "CombinedGoToGoalOrbitAvoidWithBarrierScenario.hpp"
-#include "vectorFollowingTypePoint.hpp"
+// #include "vectorFollowingTypePoint.hpp"
+#include "vectorFollowingTypePoint.cpp"
+#include "control_type.hpp"
 
 #include <eigen3/Eigen/Dense>
 
@@ -172,21 +173,19 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
 
     // integrateEuler
     // Get orientation angle, theta
-    // geometry_msgs::Quaternion q = pnt1.pose.orientation;
-    // tf2::Quaternion tq;
-    // tf2::convert(q,tq);
-    // double theta = tq.getAngle();
     double theta = tf::getYaw(pnt1.pose.orientation);
     // ROS_INFO_STREAM(" theta = " << theta);
     // ROS_INFO_STREAM("start position " << pnt1.pose.position);
+    
     // Put current orientation into vehicle state
     scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
     scenario->getObstacleDetections(scan);
+    
+    // Compute control inputs
     // TODO: time
     int t=0;
     Vector2d u = scenario->control(t,scenario->x_state());
     ROS_INFO_STREAM("cp: u = "<<u);
-    // CALL Sanaerio_OBJ to call control
 
     // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
     // VehicleKinematics need to find xdot 
@@ -282,16 +281,19 @@ int main(int argc, char** argv) {
 
             if (!scenario)
             {
-                // Sensor sens = RangeSensor(scan);
-                //RangeSensor sens(scan);
+                ROS_INFO("Building a new Combined Orbit Avoid object...");
+                RangeSensor sens(scan);
+                vectorFollowingTypePoint control;
+                // control_type control = vectorFollowingTypePoint();
                 ////ROS_INFO_STREAM("sensor size: "<<sens.n_lines());
-                //VehicleKinematics kin = BetterUnicycle();
-                //Vehicle veh = BetterUnicycleVehicle(kin,RangeSensor(scan));
+                // BetterUnicycleKinematics kin();
+                BetterUnicycleVehicle veh(sens,&control);
                 //control_type vctl = vectorFollowingTypePoint(veh);
                 scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
-                                    BetterUnicycleVehicle(BetterUnicycleKinematics(),
-                                                        RangeSensor(scan),
-                                                        vectorFollowingTypePoint()),
+                                    // BetterUnicycleVehicle(BetterUnicycleKinematics(),
+                                    //                     RangeSensor(scan),
+                                    //                     vectorFollowingTypePoint()),
+                                    veh,
                                     Pose2Vector2d(srv.request.goal));
             }
             // get the look ahead point 

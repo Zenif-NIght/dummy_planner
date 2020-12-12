@@ -20,12 +20,12 @@ private:
     Vector2d m_q_inf; // Large number to use for placing an obstacle infinitely far away
     int m_n_sensors; // stores the number of sensors
 public:
-    CombinedGoToGoalOrbitAvoidWithBarrierScenario(Vehicle veh, const Vector2d& x_g);
+    CombinedGoToGoalOrbitAvoidWithBarrierScenario(Vehicle &veh, const Vector2d& x_g);
     ~CombinedGoToGoalOrbitAvoidWithBarrierScenario();
     Vector2d control(int t, const vector<double> &x);
 };
 
-CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBarrierScenario(Vehicle veh, const Vector2d& x_g)
+CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBarrierScenario(Vehicle &veh, const Vector2d& x_g)
         : VectorFieldScenario(veh)
 {
     m_n_sensors = veh.n_sensors();
@@ -102,6 +102,7 @@ Vector2d CombinedGoToGoalOrbitAvoidWithBarrierScenario::control(int t, const vec
     for(int k=0; k < m_n_sensors; k++)
     {
         Vector2d q = getObstacle(k);
+        ROS_INFO_STREAM("Obstacle "<<k<<" at "<<q);
         updateField(q,m_avoid_indices[k],m_n_sensors);
     }
 

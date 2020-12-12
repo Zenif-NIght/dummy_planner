@@ -13,7 +13,7 @@ class Scenario
 {
 private:
     // Define elements to be simulated
-    Vehicle m_vehicle; // instance of the Vehicle class
+    Vehicle &m_vehicle; // instance of the Vehicle class
 
     // Simulation parameters
     int m_t_0; // initial time of simulation
@@ -26,7 +26,7 @@ private:
     Vector2d m_q_ind; // 2D position index
 
 public:
-    Scenario(Vehicle veh);
+    Scenario(Vehicle &veh);
     virtual Vector2d control(int t, const vector<double>& x);
     void setOrientation(double x, double y, double theta);
     vector<vector<double>> getObstacleDetections(const sensor_msgs::LaserScan &scan);
@@ -35,7 +35,7 @@ public:
     Vector2d vectorFieldControl(int,field,const vector<double>&);
 };
 
-Scenario::Scenario(Vehicle veh)
+Scenario::Scenario(Vehicle &veh)
         :m_vehicle(veh)
 {
     m_x_ind = m_vehicle.x_ind();

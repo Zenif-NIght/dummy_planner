@@ -56,6 +56,7 @@ vector<double> BetterUnicycleKinematics::kinematics(int t, const vector<double> 
         
 Vector2d BetterUnicycleKinematics::getVelocities(int t, const vector<double> &x, const vector<double> &u)
 {
+    ROS_INFO("BetterUnicycle getVelocities");
     Vector2d vel(x[m_v_ind],x[m_w_ind]);
     return vel;
 }

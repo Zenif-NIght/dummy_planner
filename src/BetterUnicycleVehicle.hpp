@@ -1,11 +1,13 @@
 #pragma once
 
 #include "Vehicle.hpp"
-#include "VehicleKinematics.hpp"
+#include "BetterUnicycleKinematics.hpp"
 #include "Sensor.hpp"
 #include "control_type.hpp"
+#include "vectorFollowingTypePoint.hpp"
 #include <vector>
 #include <eigen3/Eigen/Dense>
+#include <sensor_msgs/LaserScan.h>
 
 using namespace Eigen;
 using namespace std;
@@ -48,16 +50,17 @@ private:
     int u_alpha_ind = 2; // Rotational acceleration input
 
 public:
-    BetterUnicycleVehicle(VehicleKinematics kin, Sensor sens, control_type type);
+    BetterUnicycleVehicle(Sensor sens, control_type *type);
     ~BetterUnicycleVehicle() {}
     double eps_vel() { return m_eps_vel; }
     double vd_field_max() { return m_vd_field_max; }
     Matrix2d K_point_vel() { return m_K_point_vel; }
 };
 
-BetterUnicycleVehicle::BetterUnicycleVehicle(VehicleKinematics kin, Sensor sens, control_type type)
-        : Vehicle(kin, sens, type, vector<double>(5,0)) 
+BetterUnicycleVehicle::BetterUnicycleVehicle(Sensor sens, control_type *type)
+        : Vehicle(BetterUnicycleKinematics(), sens, type, vector<double>(5,0)) 
 {
+    ROS_INFO("BetterUnicycle constructor");
     // Initialize the kinematics and the vehicle
     //q_ind = [kin.x_ind; kin.y_ind];
     
@@ -74,7 +77,7 @@ BetterUnicycleVehicle::BetterUnicycleVehicle(VehicleKinematics kin, Sensor sens,
     // Q = diag([1, 1]);
     // R = diag([.1, .1]);
     // obj.K_point_vel = lqr(A, B, Q, R);
-    m_K_point_vel << (10.0, 0, 0, 10.0); // calculated from matlab
+    m_K_point_vel << 10.0, 0.0, 0.0, 10.0; // calculated from matlab
     
     // // Calculate feedback matrix for velocity control
     // A = zeros(2);
@@ -82,7 +85,7 @@ BetterUnicycleVehicle::BetterUnicycleVehicle(VehicleKinematics kin, Sensor sens,
     // Q = diag([100, 100]);
     // R = diag([1, 1]);
     // obj.K_vel = lqr(A, B, Q, R);
-    
+    ROS_INFO("BetterUnicycle constructor done");
 }
 
 // BetterUnicycleVehicle::pointVelocityVectorFieldControl(int t, 

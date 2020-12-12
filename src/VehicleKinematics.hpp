@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ros/ros.h"
 #include <vector>
 #include <eigen3/Eigen/Dense>
 
@@ -52,6 +53,7 @@ vector<double> VehicleKinematics::kinematics(int t, const vector<double>& x, con
 Vector2d VehicleKinematics::getVelocities(int t, const vector<double>& x, const vector<double>& u)
 {
     // virtual function
+    ROS_WARN("WARNING: VehicleKinematics getVelocities");
     Vector2d vel;
     return vel;
 }

@@ -14,14 +14,14 @@ private:
     field m_vector_field;
     // control_type; // the type of vector field control to be used
 public:
-    VectorFieldScenario(Vehicle veh);
+    VectorFieldScenario(Vehicle &veh);
     ~VectorFieldScenario();
     void setVectorField(field f);
     void updateField(const Vector2d &q,int i,int n_lines);
     Vector2d control(int t, const vector<double> &x);
 };
 
-VectorFieldScenario::VectorFieldScenario(Vehicle veh)
+VectorFieldScenario::VectorFieldScenario(Vehicle &veh)
         : Scenario(veh)
 {
 }
@@ -42,8 +42,7 @@ void VectorFieldScenario::updateField(const Vector2d &q,int i,int n_lines)
 
 Vector2d VectorFieldScenario::control(int t, const vector<double> &x)
 {
-    //Vector2d g = m_vector_field.getVector(tval,xvec,th);
-
+    ROS_INFO("VectorFieldScenario control");
     Vector2d u = vectorFieldControl(t,m_vector_field,x);
     return u;
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <eigen3/Eigen/Dense>
+#include <sensor_msgs/LaserScan.h>
 
 class Sensor
 {
