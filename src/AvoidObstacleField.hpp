@@ -4,7 +4,7 @@
 
 #include <eigen3/Eigen/Dense>
 
-class AvoidObstacle : public field
+class AvoidObstacleField : public field
 {
 private:
     Eigen::Vector2d m_x_o ; // Obstacle position
@@ -14,24 +14,24 @@ private:
     double m_S; // Sphere of influence
     double m_R; // Radius of max effect 
 public:
-    AvoidObstacle(const Eigen::Vector2d &x_o,double vmax, double S=5, double R=1);
-    ~AvoidObstacle();
+    AvoidObstacleField(const Eigen::Vector2d &x_o,double vmax, double S=5, double R=1);
+    ~AvoidObstacleField();
     void set_x_o(const Eigen::Vector2d &q) { m_x_o = q; }
     Eigen::Vector2d getVector(int t, const Eigen::Vector2d& x, double th);
 };
 
-AvoidObstacle::AvoidObstacle(const Eigen::Vector2d &x_o,double v_max, double S, double R)
+AvoidObstacleField::AvoidObstacleField(const Eigen::Vector2d &x_o,double v_max, double S, double R)
 {
     m_x_o = x_o;
     m_v_max = v_max;
     m_S = S;
     m_R = R;
 }
-AvoidObstacle::~AvoidObstacle()
+AvoidObstacleField::~AvoidObstacleField()
 {
 }
 
-Eigen::Vector2d AvoidObstacle::getVector(int t, const Eigen::Vector2d& x, double th)
+Eigen::Vector2d AvoidObstacleField::getVector(int t, const Eigen::Vector2d& x, double th)
 {
     // Calculate obstacle avoidance vector
     

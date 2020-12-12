@@ -14,6 +14,7 @@ private:
     
 public:
     SummedFields(const std::vector<field>& fields, const std::vector<double>& weights, double v_max);
+    void set_x_o(const Vector2d &v) {} // Virtual; do nothing
     Eigen::Vector2d getVector(int t, const Eigen::Vector2d& x, double th);
     void updateField(const Eigen::Vector2d &q,int i,int n_lines);
 };

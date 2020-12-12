@@ -30,13 +30,16 @@ VectorFieldScenario::~VectorFieldScenario()
 {
 }
 
+// set the m_vector_field member var; it wasn't known at construct time
 void VectorFieldScenario::setVectorField(field f)
 {
     m_vector_field = f;
 }
 
+// update each a field with the current orientation, q
 void VectorFieldScenario::updateField(const Vector2d &q,int i,int n_lines)
 {
+    ROS_INFO_STREAM("update Field "<<i);
     m_vector_field.updateField(q,i,n_lines);
 }
 

@@ -17,6 +17,7 @@ private:
 public:
     GoToGoalField(const Eigen::Vector2d & x_g, double v_max);
     ~GoToGoalField();
+    void set_x_o(const Vector2d &v) {} // virtual; do nothing
     Eigen::Vector2d getVector(int t, const Eigen::Vector2d& x, double th);
 };
 

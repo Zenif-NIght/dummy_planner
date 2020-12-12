@@ -2,7 +2,7 @@
 
 #include "GoToGoalField.hpp"
 #include "OrbitAvoidField.hpp"
-#include "AvoidObstacle.hpp"
+#include "AvoidObstacleField.hpp"
 #include "SummedFields.hpp"
 #include "VectorFieldScenario.hpp"
 #include "Vehicle.hpp"
@@ -29,7 +29,7 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
         : VectorFieldScenario(veh)
 {
     m_n_sensors = veh.n_sensors();
-    ROS_INFO("scenario: n_sensors: %d",m_n_sensors);
+    ROS_INFO("Combined: n_sensors: %d",m_n_sensors);
 
     //     % Obstacle avoidance variables - orbit
     double S = 3; //% Sphere of influence
@@ -46,24 +46,30 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
     double w_barrier = 10;
 
     // double weights = zeros(1+veh.sensor.n_lines*2, 1);
+    ROS_INFO("  weights");
     vector<double> weights(m_n_sensors * 2 +1,1);
+    ROS_INFO("  size = %d",weights.size());
     weights[0] = w_g2g;
     // weights[2:n_lines] = w_avoid;
     // weights[2+n_lines:weights.end()] = w_barrier;
     for (int i=1; i < weights.size(); i++)
     {
+        ROS_INFO("  init weignt %i",i);
         if(i > 1 + m_n_sensors)
             weights[i] = w_barrier;
         else
             weights[i] = w_avoid;
     }
+    ROS_INFO("Create a vector of fields");
     // % Create a weighted field for the vector field to follow
     // fields = cell(1+veh.sensor.n_lines*2, 1); % 1 for goal to goal and then the rest for the object avoidance
     vector<field> fields(weights.size());
     //     avoid_indices = 2:veh.sensor.n_lines+1;
-    m_avoid_indices.resize(m_n_sensors+1);
+    m_avoid_indices.resize(m_n_sensors);
     for (int i = 0; i < m_n_sensors+1; i++) {m_avoid_indices[i] = i+1;}
-    
+    ROS_INFO_STREAM("Combined: avoid_indices: size: "<<m_avoid_indices.size());
+    //ROS_INFO_STREAM("   [] = " <<m_avoid_indices);
+
     // q_inf = [10000000; 10000000];
     m_q_inf << 10000000 , 10000000;
 
@@ -73,23 +79,26 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
     fields[0] = GoToGoalField( x_g, v_max);
     // for k = avoid_indices
         // fields{k} = OrbitAvoidField(x_vec, y_vec, q_inf, R, v_max, k_conv, S);  
-        // fields{k+veh.sensor.n_lines} = AvoidObstacle(x_vec, y_vec, q_inf, v_max);
+        // fields{k+veh.sensor.n_lines} = AvoidObstacleField(x_vec, y_vec, q_inf, v_max);
     //     fields{k+veh.sensor.n_lines}.S = S_b;
     //     fields{k+veh.sensor.n_lines}.R = R_b;
     // end
+    ROS_INFO_STREAM("Combined: set field objects for "<<m_n_sensors);
     for(int k : m_avoid_indices)
     {
         fields[k] = OrbitAvoidField(m_q_inf, R, v_max, k_conv,S);
-        fields[k+m_n_sensors] = AvoidObstacle( m_q_inf, v_max, S_b, R_b);
+        fields[k+m_n_sensors] = AvoidObstacleField( m_q_inf, v_max, S_b, R_b);
     }
     //ROS_INFO("field[0]: ");
 
 
     //     % Create a combined vector field
     //     field = SummedFields(x_vec, y_vec, fields, weights, v_max);
+    ROS_INFO("sum fields...");
     SummedFields sfield(fields, weights, v_max);
+    ROS_INFO("setVectorFIeld");
     setVectorField(sfield);
-    
+    ROS_INFO("construction done");
 }
 
 CombinedGoToGoalOrbitAvoidWithBarrierScenario::~CombinedGoToGoalOrbitAvoidWithBarrierScenario()
@@ -98,6 +107,7 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::~CombinedGoToGoalOrbitAvoidWithBa
 
 Vector2d CombinedGoToGoalOrbitAvoidWithBarrierScenario::control(int t, const vector<double> &x)
 {
+    ROS_INFO("Combine control entry; update fields");
     // Get obstacle avoidance readings into the vector fields
     for(int k=0; k < m_n_sensors; k++)
     {

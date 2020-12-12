@@ -178,14 +178,17 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     // ROS_INFO_STREAM("start position " << pnt1.pose.position);
     
     // Put current orientation into vehicle state
+    ROS_INFO("loop: Insert current orientation");
     scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
+    ROS_INFO("loop: detect obstacles");
     scenario->getObstacleDetections(scan);
     
     // Compute control inputs
     // TODO: time
     int t=0;
+    ROS_INFO("loop: get control inputs");
     Vector2d u = scenario->control(t,scenario->x_state());
-    ROS_INFO_STREAM("cp: u = "<<u);
+    ROS_INFO_STREAM("loop: control u = "<<u);
 
     // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
     // VehicleKinematics need to find xdot 
@@ -295,6 +298,7 @@ int main(int argc, char** argv) {
                                     //                     vectorFollowingTypePoint()),
                                     veh,
                                     Pose2Vector2d(srv.request.goal));
+                ROS_INFO("Done building Combined Orbit Avoid object");
             }
             // get the look ahead point 
             calculateLookAheadPoint(srv.request.start,
