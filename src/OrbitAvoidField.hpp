@@ -1,3 +1,5 @@
+#pragma once
+
 #include "field.hpp"
 //#include <eql/linear_algebra.hpp>
 #include <cmath>
@@ -15,6 +17,7 @@ private:
 public:
     OrbitAvoidField(const Eigen::Vector2d &x_o,double rad,double v_d, double k_conv,double S);
     ~OrbitAvoidField();
+    void set_x_o(const Eigen::Vector2d &q) { m_x_o = q; }
     Eigen::Vector2d getVector(int t, const Eigen::Vector2d& x, double th);
 };
 

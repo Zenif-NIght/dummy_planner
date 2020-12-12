@@ -7,6 +7,7 @@
 #include "nav_msgs/Path.h"
 #include <tf2_ros/transform_listener.h>
 #include <sensor_msgs/LaserScan.h>
+#include <eigen3/Eigen/Dense>
 
 #include "nav_msgs/OccupancyGrid.h"
 #include "std_msgs/Header.h"
@@ -55,23 +56,27 @@ public:
      */
     bool getLatestGoal(geometry_msgs::PoseStamped & pose);
     
-    // /*!
-    //  * \brief getLatestScan Returns the latest scan pose in the robot frame
-    //  * \param scan Latest goal scan
-    //  * \return
-    //  */
-    // bool getLatestScan(sensor_msgs::LaserScan &scan);
+    /*!
+     * \brief getLatestScan Returns the latest scan
+     * \param scan Latest laser scan
+     * \return
+     */
+    bool getLatestScan(sensor_msgs::LaserScan &scan);
 
     /*!
      * \brief map_frame_id the frame_id of the map
      */
     const std::string map_frame_id;
 
-    /*!
-     * \brief m_latest_scan stores the scan data
-     */
-    sensor_msgs::LaserScan::ConstPtr latest_scan;
+    // /*!
+    //  * \brief Pose2Vector2d convert a pose to an Eigen Vector2d
+    //  */
+    // Eigen::Vector2d Pose2Vector2d(const geometry_msgs::PoseStamped & pose);
 
+    // /*!
+    //  * \brief Vector2d2Pose convert an Eigen Vector2d to a Pose
+    //  */
+    // geometry_msgs::PoseStamped Vector2d2Pose(const Eigen::Vector2d & vec, const geometry_msgs::PoseStamped &ptemplate);
 private:
     /*!
      * \brief latest_odom is a pointer to the latest odometry message received
@@ -82,6 +87,11 @@ private:
      * \brief m_latest_goal is the latest goal to plan to, stored in the correct frame
      */
     geometry_msgs::PoseStamped::ConstPtr m_latest_goal;
+
+    /*!
+     * \brief m_latest_scan stores the scan data
+     */
+    sensor_msgs::LaserScan::ConstPtr m_latest_scan;
 
     /*!
      * \brief latest_transformed_goal stores the transformed goal

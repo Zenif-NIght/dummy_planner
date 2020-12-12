@@ -1,13 +1,19 @@
-#include <eigen3/Eigen/Dense>
-
 #pragma once
+
+#include <eigen3/Eigen/Dense>
+#include <vector>
+
+#include "Vehicle.hpp"
+#include "field.hpp"
+
+using namespace Eigen;
+using namespace std;
 
 class Scenario
 {
 private:
     // Define elements to be simulated
-    Vechicle m_vehicle; // instance of the Vehicle class
-    World m_world; // instance of the Polygon world class
+    Vehicle &m_vehicle; // instance of the Vehicle class
 
     // Simulation parameters
     int m_t_0; // initial time of simulation
@@ -17,20 +23,54 @@ private:
     // index variables
     int m_x_ind; // x position index
     int m_y_ind; // y position index
-    Eigen::Vector2d m_q_ind; // 2D position index
+    Vector2d m_q_ind; // 2D position index
 
 public:
-    Scenario(Vehicle veh, World world);
-}
+    Scenario(Vehicle &veh);
+    virtual Vector2d control(int t, const vector<double>& x);
+    void setOrientation(double x, double y, double theta);
+    vector<vector<double>> getObstacleDetections(const sensor_msgs::LaserScan &scan);
+    Vector2d getObstacle(int k);
+    vector<double> x_state() { return m_vehicle.x_state(); }
+    Vector2d vectorFieldControl(int,field,const vector<double>&);
+};
 
-Scenario::Scenario(Vehicle veh, World world)
+Scenario::Scenario(Vehicle &veh)
+        :m_vehicle(veh)
 {
-    m_vehicle = veh;
-    m_world = world;
-
     m_x_ind = m_vehicle.x_ind();
     m_y_ind = m_vehicle.y_ind();
     m_q_ind << m_x_ind , m_y_ind;
 
-    m_vehicle.getObstacleDetections(m_world);
+}
+
+Vector2d Scenario::control(int t, const vector<double>& x)
+{
+    // virtual method
+    // return nothing
+    return Vector2d(0);
+}
+
+void Scenario::setOrientation(double x, double y, double theta)
+{
+    m_vehicle.setOrientation(x,y,theta);
+}
+
+vector<vector<double>> Scenario::getObstacleDetections(const sensor_msgs::LaserScan &scan)
+{
+    vector<vector<double>> obs;
+    obs.push_back(vector<double>(0));
+    obs.push_back(vector<double>(0));
+    obs.push_back(vector<double>(0));
+    return obs;
+}
+
+Vector2d Scenario::getObstacle(int k)
+{
+    return m_vehicle.getObstacle(k);
+}
+
+Vector2d Scenario::vectorFieldControl(int t,field f,const vector<double>&x)
+{
+    m_vehicle.vectorFieldControl(t,f,x);
 }

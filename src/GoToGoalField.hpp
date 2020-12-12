@@ -1,3 +1,5 @@
+#pragma once
+
 #include "field.hpp"
 #include <eigen3/Eigen/Dense>
 #include <cmath>

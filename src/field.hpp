@@ -3,6 +3,9 @@
 
 #include <eigen3/Eigen/Dense>
 
+using namespace Eigen;
+using namespace std;
+
 class field
 {
 // VectorField is an abstract class which gives a basic vector field for navigation
@@ -13,17 +16,12 @@ public:
     // double R;
     field();
     ~field() {}
+    void set_x_o(const Vector2d &v) {}
+    void updateField(const Vector2d &q,int i,int n_lines) {}
     // Abstract
-    virtual Eigen::Vector2d getVector(int t, const Eigen::Vector2d& x, double th);
+    virtual Vector2d getVector(int t, const Vector2d& x, double th) {return Vector2d(0);}
 };
 
 field::field()
 {
-}
-
-Eigen::Vector2d field::getVector(int t, const Eigen::Vector2d& x, double th)
-{
-    Eigen::Vector2d g;
-    g << 0,0;
-    return g;
 }

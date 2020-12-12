@@ -1,5 +1,12 @@
 #pragma once
 
+#include "ros/ros.h"
+#include <vector>
+#include <eigen3/Eigen/Dense>
+
+using namespace Eigen;
+using namespace std;
+
 class VehicleKinematics
 {
 // VehicleKinematics Abstract class defining the required methods for a dynamics class
@@ -14,11 +21,15 @@ private:
 
 public:
     VehicleKinematics(int dim);
-    int getNumberControlInputs();
+    virtual int getNumberControlInputs();
+    int x_ind() { return m_x_ind; }
+    int y_ind() { return m_y_ind; }
+    int th_ind() { return m_th_ind; }
+    int dimensions() { return m_dimensions; }
     // Abstract methods
-    std::vector<double> kinematics(int t, const std::vector<double>& x, const std::vector<double>& u) = 0;
-    std::vector<double> getVelocities(int t, const std::vector<double>& x, const std::vector<double>& u) = 0;
-}
+    virtual vector<double> kinematics(int t, const vector<double>& x, const vector<double>& u);
+    virtual Vector2d getVelocities(int t, const vector<double>& x, const vector<double>& u);
+};
 
 VehicleKinematics::VehicleKinematics(int dem)
 {
@@ -30,4 +41,19 @@ int VehicleKinematics::getNumberControlInputs()
 {
     // default is to return 2 control inputs
     return 2;
+}
+
+vector<double> VehicleKinematics::kinematics(int t, const vector<double>& x, const vector<double>& u)
+{
+    // virtual function
+    vector<double> xdot;
+    return xdot;
+}
+
+Vector2d VehicleKinematics::getVelocities(int t, const vector<double>& x, const vector<double>& u)
+{
+    // virtual function
+    ROS_WARN("WARNING: VehicleKinematics getVelocities");
+    Vector2d vel;
+    return vel;
 }

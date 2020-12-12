@@ -160,6 +160,9 @@ add_executable(continuous_planner src/continuous_planner.cpp)
 add_dependencies(continuous_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(continuous_planner ${catkin_LIBRARIES})
 
+#add_executable(vectorFollowingTypePoint src/vectorFollowingTypePoint.cpp)
+#add_dependencies(vectorFollowingTypePoint ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#target_link_libraries(vectorFollowingTypePoint ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
