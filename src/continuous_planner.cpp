@@ -189,12 +189,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     // ROS_INFO("unit : %f %f",unit.x(),unit.y());
 
     // Calculate the new point
-<<<<<<< HEAD
-    result = pnt1;
-    result.pose.position.x += unit.x*look_ahead;
-    result.pose.position.y += unit.y*look_ahead;
-    result.pose.position.z += unit.z*look_ahead;
-=======
+    // geometry_msgs::PoseStamped result1;
     // geometry_msgs::PoseStamped result1;
     // result1 = pnt1;
     // result1.pose.position.x += unit1.x*look_ahead;
@@ -212,7 +207,6 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     double theta = tf::getYaw(pnt1.pose.orientation);
     // ROS_INFO_STREAM(" theta = " << theta);
     // ROS_INFO_STREAM("start position " << pnt1.pose.position);
->>>>>>> 5279f28618f5a632083219a5bfc65037f9a6a1c7
     
     // Put current orientation into vehicle state
     scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
