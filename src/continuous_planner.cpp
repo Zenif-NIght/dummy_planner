@@ -207,7 +207,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     double theta = tf::getYaw(pnt1.pose.orientation);
     // ROS_INFO_STREAM(" theta = " << theta);
     // ROS_INFO_STREAM("start position " << pnt1.pose.position);
-    
+    return;
     // Put current orientation into vehicle state
     ROS_INFO("loop: Insert current orientation");
     scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
@@ -320,24 +320,24 @@ int main(int argc, char** argv) {
         // Call the service to get the plan
         if(goal_received && pose_received && scan_received) {
 
-            if (!scenario)
-            {
-                ROS_INFO("Building a new Combined Orbit Avoid object...");
-                RangeSensor sens(scan);
-                vectorFollowingTypePoint control;
-                // control_type control = vectorFollowingTypePoint();
-                ////ROS_INFO_STREAM("sensor size: "<<sens.n_lines());
-                // BetterUnicycleKinematics kin();
-                BetterUnicycleVehicle veh(sens,&control);
-                //control_type vctl = vectorFollowingTypePoint(veh);
-                scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
-                                    // BetterUnicycleVehicle(BetterUnicycleKinematics(),
-                                    //                     RangeSensor(scan),
-                                    //                     vectorFollowingTypePoint()),
-                                    veh,
-                                    Pose2Vector2d(srv.request.goal));
-                ROS_INFO("Done building Combined Orbit Avoid object");
-            }
+            // if (!scenario)
+            // {
+            //     ROS_INFO("Building a new Combined Orbit Avoid object...");
+            //     RangeSensor sens(scan);
+            //     vectorFollowingTypePoint control;
+            //     // control_type control = vectorFollowingTypePoint();
+            //     ////ROS_INFO_STREAM("sensor size: "<<sens.n_lines());
+            //     // BetterUnicycleKinematics kin();
+            //     BetterUnicycleVehicle veh(sens,&control);
+            //     //control_type vctl = vectorFollowingTypePoint(veh);
+            //     scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
+            //                         // BetterUnicycleVehicle(BetterUnicycleKinematics(),
+            //                         //                     RangeSensor(scan),
+            //                         //                     vectorFollowingTypePoint()),
+            //                         veh,
+            //                         Pose2Vector2d(srv.request.goal));
+            //     ROS_INFO("Done building Combined Orbit Avoid object");
+            // }
             // get the look ahead point 
             calculateLookAheadPoint(srv.request.start,
                                 srv.request.goal,
