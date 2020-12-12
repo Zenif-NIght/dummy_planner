@@ -39,6 +39,36 @@ void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg
     m_latest_scan = msg;
 }
 
+void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr& msg) { //OccupancyGrid::ConstPtr
+    std_msgs::Header header = msg->header;
+    nav_msgs::MapMetaData info = msg->info;
+    // ROS_INFO("Got map %d %d", info.width, info.height);
+    // std::vector<std::vector<int>> newMap(info.height,info.width );
+    Eigen::MatrixXd newMap(info.height,info.width);
+    for(int row=0; row<msg->info.width; row++)
+    {
+        for(int col =0; col<msg->info.height; col++)
+        {
+            int current_cell_value = msg->data[row+ (msg->info.width * col)];
+            newMap(row,col) = current_cell_value;
+        }
+    }
+    std::stringstream str;
+    str << msg->info.width <<","<< msg->info.height<<"\r";
+    str.str();
+    // ROS_INFO_STREAM("Cur map size: "<< newMap); // 91 x 91
+
+    // given latest Goal
+    m_latest_goal;
+    // for(int i=0; i<info.height*info.width; i++)
+    //     {
+    //         // if(msg->data[i]==-1)
+    //         //     Ngray++;
+    //         m_occupancy_grid.data[i] = msg->data[i];
+    //     }
+        
+}
+
 bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped & pose) {
     bool received = false; // Default to not received yet
 
@@ -160,6 +190,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
 
     // Calculate the new point
     // geometry_msgs::PoseStamped result1;
+    // geometry_msgs::PoseStamped result1;
     // result1 = pnt1;
     // result1.pose.position.x += unit1.x*look_ahead;
     // result1.pose.position.y += unit1.y*look_ahead;
@@ -239,7 +270,14 @@ int main(int argc, char** argv) {
     ros::Subscriber sub_scan = n.subscribe("scan", 
                                             1, 
                                             &ContinuousPlanner::scanCallback,
-                                            &planner);                                            
+                                            &planner);   
+
+        // Create a subscription to the scan message
+    ros::Subscriber occupancy_grid = n.subscribe("/occupancy_grid", 
+                                            1, 
+                                            &ContinuousPlanner::occupancyCallback,
+                                            &planner);
+
     // TODO SET up CombinedGoToGoalOrbitAvoidWithBarrierScenario based off SCAN 
     
     ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("path",1);                                        

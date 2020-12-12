@@ -5,6 +5,7 @@
   <arg name="run_rviz" default="true"/> <!-- true => open rviz, only needs to be done for a single vehicle -->
   <arg name="run_joystick" default="false"/> <!-- true => use the joystick node, false => use go-to-goal controller -->
   <arg name="spawn_gazebo" default="false" /> <!-- true => use gazebo for the physics engine, false => use simple physics -->
+  <arg name="run_occupancy_grid" default="true"/>
   <arg name="x_pos" default="-7.0"/> <!-- Pose of vehicle at start -->
   <arg name="y_pos" default="-1.0"/>
   <arg name="z_pos" default=" 0.0"/>
@@ -12,6 +13,11 @@
   <arg name="dynamics_model" default="unicycle_dynamics"/> <!-- options: "unicycle_dynamics" - use a unicycle model, "jerk_unicycle_dynamics" - use a jerk model -->
   <arg name="goal_topic" default="/move_base_simple/goal" />
 
+  <group if="$(arg run_occupancy_grid)">
+      <include file="$(find occupancy_grid)/launch/occupancy_grid.launch">
+        <arg name="resolution" value="0.33"/>
+      </include>
+  </group>
   <!-- Start Simulation -->
   <group if="$(arg run_sim)">
       <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg spawn_gazebo)">
@@ -37,6 +43,7 @@
           </node>
       </group>
   </group>
+
 
   <!-- Create Vehicle -->
   <group ns="/robot1/" >

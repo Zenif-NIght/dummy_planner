@@ -9,6 +9,10 @@
 #include <sensor_msgs/LaserScan.h>
 #include <eigen3/Eigen/Dense>
 
+#include "nav_msgs/OccupancyGrid.h"
+#include "std_msgs/Header.h"
+#include "nav_msgs/MapMetaData.h"
+
 #include <string>
 
 namespace dummy_planner {
@@ -38,6 +42,13 @@ public:
      */
     bool getLatestPose(geometry_msgs::PoseStamped & pose);
 
+    /*!
+     * \brief occupancyCallback Returns the latest OccupancyGrid in the map frame
+     * \param msg Latest goal pose
+     * \return
+     */
+    void occupancyCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg);
+    
     /*!
      * \brief getLatestGoal Returns the latest goal pose in the map frame
      * \param pose Latest goal pose
@@ -87,6 +98,10 @@ private:
      */
     geometry_msgs::PoseStamped m_latest_transformed_goal;
 
+    /*!
+     * \brief latest OccupancyGrid
+     */
+    nav_msgs::OccupancyGrid m_occupancy_grid;
 
     /*!
      * \brief flag_goal_transformed flag storing whether or not the goal has been transformed
