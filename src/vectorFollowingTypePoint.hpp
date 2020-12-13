@@ -24,5 +24,6 @@ public:
         int t, 
         field &f,
         const vector<double> &x);
+    void SayHi() { ROS_INFO("HI from control");}
 };
 

@@ -68,7 +68,7 @@
     </include>
 
     <!-- Run the goal to goal control -->
-    <node pkg="controllers" type="simple_go_to_goal" name="go_to_goal"  output="screen" unless="$(arg run_joystick)">
+    <node pkg="controllers" type="simple_go_to_goal" name="go_to_goal" output="screen" unless="$(arg run_joystick)">
         <param name="nominal_velocity" value="0.5" />
         <param name="trans_vel_gain" value="0.5" />
         <param name="rot_vel_gain" value="1.0" />

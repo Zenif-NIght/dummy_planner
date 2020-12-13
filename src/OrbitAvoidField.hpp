@@ -26,15 +26,19 @@ OrbitAvoidField::OrbitAvoidField( const Eigen::Vector2d &x_o,
                                     double v_d, 
                                     double k_conv,
                                     double S)
+        // : m_x_o(x_o), m_rad(rad), m_k_conv(k_conv), m_S(S)
 {
     // Store the variables which describe the orbit
+    ROS_INFO("  Orbit avoid: set x_o");
     m_x_o = x_o;
     m_rad = rad;
     m_k_conv = k_conv;
     m_S = S;
 
     // Calculate the rotational velocity
+    ROS_INFO("  v_d %f",v_d);
     m_v_d = abs(v_d);
+    ROS_INFO("  get w");
     m_w = m_v_d/m_rad;
 }
 

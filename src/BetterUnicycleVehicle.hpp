@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Vehicle.hpp"
-#include "BetterUnicycleKinematics.hpp"
+//#include "BetterUnicycleKinematics.hpp"
 #include "Sensor.hpp"
 #include "control_type.hpp"
 #include "vectorFollowingTypePoint.hpp"
@@ -50,15 +50,15 @@ private:
     int u_alpha_ind = 2; // Rotational acceleration input
 
 public:
-    BetterUnicycleVehicle(Sensor sens, control_type *type);
+    BetterUnicycleVehicle(VehicleKinematics &kin, Sensor &sens, control_type *type);
     ~BetterUnicycleVehicle() {}
     double eps_vel() { return m_eps_vel; }
     double vd_field_max() { return m_vd_field_max; }
     Matrix2d K_point_vel() { return m_K_point_vel; }
 };
 
-BetterUnicycleVehicle::BetterUnicycleVehicle(Sensor sens, control_type *type)
-        : Vehicle(BetterUnicycleKinematics(), sens, type, vector<double>(5,0)) 
+BetterUnicycleVehicle::BetterUnicycleVehicle(VehicleKinematics &kin, Sensor &sens, control_type *type)
+        : Vehicle(kin, sens, type, vector<double>(5,0)) 
 {
     ROS_INFO("BetterUnicycle constructor");
     // Initialize the kinematics and the vehicle

@@ -7,6 +7,7 @@
 #include <tf/tf.h>
 
 #include "SummedFields.hpp"
+#include "BetterUnicycleKinematics.hpp"
 #include "BetterUnicycleVehicle.hpp"
 #include "RangeSensor.hpp"
 #include "CombinedGoToGoalOrbitAvoidWithBarrierScenario.hpp"
@@ -327,8 +328,8 @@ int main(int argc, char** argv) {
                 vectorFollowingTypePoint control;
                 // control_type control = vectorFollowingTypePoint();
                 ////ROS_INFO_STREAM("sensor size: "<<sens.n_lines());
-                // BetterUnicycleKinematics kin();
-                BetterUnicycleVehicle veh(sens,&control);
+                BetterUnicycleKinematics kin;
+                BetterUnicycleVehicle veh(kin,sens,&control);
                 //control_type vctl = vectorFollowingTypePoint(veh);
                 scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
                                     // BetterUnicycleVehicle(BetterUnicycleKinematics(),

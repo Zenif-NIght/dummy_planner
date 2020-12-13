@@ -17,7 +17,7 @@ class CombinedGoToGoalOrbitAvoidWithBarrierScenario : public VectorFieldScenario
 {
 private:
     vector<int> m_avoid_indices; // Stores the indices for the avoidance fields
-    Vector2d m_q_inf; // Large number to use for placing an obstacle infinitely far away
+    // aligned?? Vector2d m_q_inf; // Large number to use for placing an obstacle infinitely far away
     int m_n_sensors; // stores the number of sensors
 public:
     CombinedGoToGoalOrbitAvoidWithBarrierScenario(Vehicle &veh, const Vector2d& x_g);
@@ -29,7 +29,7 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
         : VectorFieldScenario(veh)
 {
     m_n_sensors = veh.n_sensors();
-    ROS_INFO("Combined: n_sensors: %d",m_n_sensors);
+    ROS_INFO_STREAM("Combined: n_sensors: "<<m_n_sensors);
 
     //     % Obstacle avoidance variables - orbit
     double S = 3; //% Sphere of influence
@@ -48,7 +48,7 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
     // double weights = zeros(1+veh.sensor.n_lines*2, 1);
     ROS_INFO("  weights");
     vector<double> weights(m_n_sensors * 2 +1,1);
-    ROS_INFO("  size = %d",weights.size());
+    ROS_INFO_STREAM("  size = "<<weights.size());
     weights[0] = w_g2g;
     // weights[2:n_lines] = w_avoid;
     // weights[2+n_lines:weights.end()] = w_barrier;
@@ -71,7 +71,7 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
     //ROS_INFO_STREAM("   [] = " <<m_avoid_indices);
 
     // q_inf = [10000000; 10000000];
-    m_q_inf << 10000000 , 10000000;
+    Vector2d q_inf( 10000000 , 10000000); // infinity
 
     const double v_max = 2; // max velocity limit
 
@@ -86,8 +86,9 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
     ROS_INFO_STREAM("Combined: set field objects for "<<m_n_sensors);
     for(int k : m_avoid_indices)
     {
-        fields[k] = OrbitAvoidField(m_q_inf, R, v_max, k_conv,S);
-        fields[k+m_n_sensors] = AvoidObstacleField( m_q_inf, v_max, S_b, R_b);
+        ROS_INFO("  set field %d",k);
+        fields[k] = OrbitAvoidField(q_inf, R, v_max, k_conv,S);
+        fields[k+m_n_sensors] = AvoidObstacleField( q_inf, v_max, S_b, R_b);
     }
     //ROS_INFO("field[0]: ");
 
@@ -116,5 +117,6 @@ Vector2d CombinedGoToGoalOrbitAvoidWithBarrierScenario::control(int t, const vec
         updateField(q,m_avoid_indices[k],m_n_sensors);
     }
 
+    ROS_INFO("get fector field control variables");
     return VectorFieldScenario::control(t,x);
 }

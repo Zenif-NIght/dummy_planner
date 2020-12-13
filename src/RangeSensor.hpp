@@ -42,7 +42,7 @@ RangeSensor::RangeSensor(const sensor_msgs::LaserScan &scan)
 
 void RangeSensor::InitializeSensor(const sensor_msgs::LaserScan &scan)
 {
-    m_n_lines = (scan.angle_max - scan.angle_min + 1)/scan.angle_increment + 1;
+    m_n_lines = (scan.angle_max - scan.angle_min)/scan.angle_increment + 1;
     m_max_dist = scan.range_max;
     m_min_dist = scan.range_min;
     m_angle_min = scan.angle_min;

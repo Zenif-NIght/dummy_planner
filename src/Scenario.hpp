@@ -27,11 +27,11 @@ private:
 
 public:
     Scenario(Vehicle &veh);
-    virtual Vector2d control(int t, const vector<double>& x);
+    virtual Vector2d control(int t, const vector<double>& x) = 0;
     void setOrientation(double x, double y, double theta);
-    vector<vector<double>> getObstacleDetections(const sensor_msgs::LaserScan &scan);
+    void getObstacleDetections(const sensor_msgs::LaserScan &scan);
     Vector2d getObstacle(int k);
-    vector<double> x_state() { return m_vehicle.x_state(); }
+    vector<double> x_state();
     Vector2d vectorFieldControl(int,field,const vector<double>&);
 };
 
@@ -44,33 +44,34 @@ Scenario::Scenario(Vehicle &veh)
 
 }
 
-Vector2d Scenario::control(int t, const vector<double>& x)
-{
-    // virtual method
-    // return nothing
-    return Vector2d(0);
-}
-
+// Pass a new orientation to vehicle - put in state vector
 void Scenario::setOrientation(double x, double y, double theta)
 {
     m_vehicle.setOrientation(x,y,theta);
 }
 
-vector<vector<double>> Scenario::getObstacleDetections(const sensor_msgs::LaserScan &scan)
-{
-    vector<vector<double>> obs;
-    obs.push_back(vector<double>(0));
-    obs.push_back(vector<double>(0));
-    obs.push_back(vector<double>(0));
-    return obs;
+// Get the state vector from the vehicle
+vector<double> Scenario::x_state()
+{ 
+    return m_vehicle.x_state();
 }
 
+// Ask vehicle to interpret the laser scan data
+void Scenario::getObstacleDetections(const sensor_msgs::LaserScan &scan)
+{
+    m_vehicle.getObstacleDetections(scan);
+}
+
+// Get the position of the kth obstacle from the vehicle
 Vector2d Scenario::getObstacle(int k)
 {
+    ROS_INFO("Scenario: getObstacle %d",k);
     return m_vehicle.getObstacle(k);
 }
 
+// Compute the control inputs from the vector field
 Vector2d Scenario::vectorFieldControl(int t,field f,const vector<double>&x)
 {
-    m_vehicle.vectorFieldControl(t,f,x);
+    ROS_INFO("Scenario: vectorFieldControl()");
+    return m_vehicle.vectorFieldControl(t,f,x);
 }

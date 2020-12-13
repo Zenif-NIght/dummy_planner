@@ -5,15 +5,17 @@
 #include "ros/ros.h"
 #include <eigen3/Eigen/Dense>
 
+// constructor
 vectorFollowingTypePoint::vectorFollowingTypePoint()
 {
-        ROS_INFO("vectorFollowingTypePoing constructor");
+        ROS_INFO("vectorFollowingTypePoint constructor");
 }
 
 vectorFollowingTypePoint::~vectorFollowingTypePoint()
 {
 }
 
+// calculate the desired control vector to follow
 Vector2d vectorFollowingTypePoint::vectorFieldControl(
         Vehicle &veh,
         int t, 
@@ -36,7 +38,7 @@ Vector2d vectorFollowingTypePoint::vectorFieldControl(
     // c = cos(th);
     // s = sin(th);
     ROS_INFO("vfc: field control");
-    Vector2d v_w = veh.kinematics().getVelocities(t, x, x);
+    Vector2d v_w = veh.getVelocities(t, x);
     ROS_INFO_STREAM("vfc: v_s = "<<v_w);
     double w = v_w[1];
 	double th = veh.th();

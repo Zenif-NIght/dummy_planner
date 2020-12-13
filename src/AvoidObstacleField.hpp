@@ -22,10 +22,12 @@ public:
 
 AvoidObstacleField::AvoidObstacleField(const Eigen::Vector2d &x_o,double v_max, double S, double R)
 {
+    ROS_INFO("  AvoidObs");
     m_x_o = x_o;
     m_v_max = v_max;
     m_S = S;
     m_R = R;
+    ROS_INFO("  end avoid");
 }
 AvoidObstacleField::~AvoidObstacleField()
 {
