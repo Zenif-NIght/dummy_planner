@@ -208,7 +208,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     double theta = tf::getYaw(pnt1.pose.orientation);
     // ROS_INFO_STREAM(" theta = " << theta);
     // ROS_INFO_STREAM("start position " << pnt1.pose.position);
-    
+    return;
     // Put current orientation into vehicle state
     ROS_INFO("loop: Insert current orientation");
     scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
