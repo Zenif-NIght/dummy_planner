@@ -79,6 +79,11 @@ public:
     // geometry_msgs::PoseStamped Vector2d2Pose(const Eigen::Vector2d & vec, const geometry_msgs::PoseStamped &ptemplate);
 private:
     /*!
+     * \brief m_last_map_size number of edages found
+     */
+    int m_last_map_size;
+
+    /*!
      * \brief latest_odom is a pointer to the latest odometry message received
      */
     nav_msgs::Odometry::ConstPtr m_latest_odom;

@@ -14,6 +14,8 @@
 #include "vectorFollowingTypePoint.cpp"
 #include "control_type.hpp"
 
+#include "AStarPlanner.hpp"
+
 #include <eigen3/Eigen/Dense>
 
 using namespace dummy_planner;
@@ -23,7 +25,8 @@ using namespace std;
 ContinuousPlanner::ContinuousPlanner(const string & map_frame_id) :
     map_frame_id(map_frame_id),
     m_flag_goal_transformed(false),
-    m_tf_listener(m_tf_buffer)
+    m_tf_listener(m_tf_buffer),
+    m_last_map_size(0)
 {}
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
@@ -45,12 +48,16 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // ROS_INFO("Got map %d %d", info.width, info.height);
     // std::vector<std::vector<int>> newMap(info.height,info.width );
     Eigen::MatrixXd newMap(info.height,info.width);
+    int cur_map_size = 0;
+    
     for(int row=0; row<msg->info.width; row++)
     {
         for(int col =0; col<msg->info.height; col++)
         {
             int current_cell_value = msg->data[row+ (msg->info.width * col)];
             newMap(row,col) = current_cell_value;
+            if(current_cell_value > 0)
+                cur_map_size ++;    
         }
     }
     std::stringstream str;
@@ -59,7 +66,19 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // ROS_INFO_STREAM("Cur map size: "<< newMap); // 91 x 91
 
     // given latest Goal
-    m_latest_goal;
+    if( !m_latest_odom || !m_latest_goal || cur_map_size <= m_last_map_size )
+        return; //no need to update Plan
+
+    m_last_map_size = cur_map_size;
+    ROS_INFO_STREAM("ccupancyCallback map_size: "<< m_last_map_size);                                         
+
+    Vector2d cur(m_latest_odom->pose.pose.position.x,
+                     m_latest_odom->pose.pose.position.y);
+    Vector2d goal(m_latest_goal->pose.position.x,
+                     m_latest_goal->pose.position.y);
+
+    AStarPlanner aStar_planner(newMap,cur,goal);
+    // AStarPlanner aStar_planner();
     // for(int i=0; i<info.height*info.width; i++)
     //     {
     //         // if(msg->data[i]==-1)
