@@ -48,7 +48,7 @@ CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBar
     // double weights = zeros(1+veh.sensor.n_lines*2, 1);
     ROS_INFO("  weights");
     vector<double> weights(m_n_sensors * 2 +1,1);
-    ROS_INFO("  size = %d",weights.size());
+    // ROS_INFO("  size = %d",weights.size());
     weights[0] = w_g2g;
     // weights[2:n_lines] = w_avoid;
     // weights[2+n_lines:weights.end()] = w_barrier;
