@@ -28,19 +28,26 @@ ContinuousPlanner::ContinuousPlanner(const string & map_frame_id) :
 {}
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+    if(!msg || m_latest_odom != msg)return;
     m_latest_odom = msg;    
 }
 
 void ContinuousPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg) {
+    if(!msg || m_latest_goal != msg)
+        return;
     m_latest_goal = msg; // Store the goal
     m_flag_goal_transformed = false; // Indicate that the newest goal needs to be transformed
 }
 
 void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg) {
+    if(!msg || m_latest_scan != msg)
+        return;
     m_latest_scan = msg;
 }
 
 void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr& msg) { //OccupancyGrid::ConstPtr
+    // if(!msg || m_latest_odom != msg)return;
+
     std_msgs::Header header = msg->header;
     nav_msgs::MapMetaData info = msg->info;
     // ROS_INFO("Got map %d %d", info.width, info.height);
