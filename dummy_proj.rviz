@@ -10,6 +10,7 @@ Panels:
         - /Pose1
         - /MarkerArray1
         - /Map1
+        - /Marker1
       Splitter Ratio: 0.6029411554336548
     Tree Height: 978
   - Class: rviz/Selection
@@ -223,6 +224,7 @@ Visualization Manager:
         Axes: true
         Grid: true
         LaserScan: true
+        Map: true
         MarkerArray: true
         Odometry: true
         Path: true
@@ -287,6 +289,14 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /robot1/visualization_lines
+      Name: Marker
+      Namespaces:
+        points_and_lines: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 200; 200; 200
@@ -315,15 +325,15 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 4.939543724060059
+      Distance: 12.23012924194336
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.8379738330841064
-        Y: -2.1009981632232666
+        X: 3.7965073585510254
+        Y: -5.2243332862854
         Z: 3.675944753922522e-6
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806

@@ -14,6 +14,7 @@
 // #include "vectorFollowingTypePoint.hpp"
 #include "vectorFollowingTypePoint.cpp"
 #include "control_type.hpp"
+#include <visualization_msgs/Marker.h>
 
 #include "AStarPlanner.hpp"
 
@@ -45,6 +46,7 @@ void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg
 
 AStarPlanner::LocList GLOBAL_path;
 int GLOBAL_index = 0;
+bool timeToGetNewPlan = false;
 
 void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr& msg) { //OccupancyGrid::ConstPtr
     // if(!msg || m_latest_odom != msg)return;
@@ -123,7 +125,8 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     //     /* code */
     // }
     ROS_WARN_STREAM("GLOBAL_path: update");
-    GLOBAL_index = 2;
+    GLOBAL_index = 1;
+    timeToGetNewPlan = true;
     ROS_WARN_STREAM("GLOBAL_LOOKaHEAD: " << GLOBAL_path[GLOBAL_index](0)<<","<<GLOBAL_path[GLOBAL_index](1)); 
 
 }
@@ -336,6 +339,8 @@ int main(int argc, char** argv) {
                                             &ContinuousPlanner::occupancyCallback,
                                             &planner);
 
+    ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_lines", 10);
+    
     // TODO SET up CombinedGoToGoalOrbitAvoidWithBarrierScenario based off SCAN 
     
     ros::Publisher pub_plan = n.advertise<nav_msgs::Path>("path",1);                                        
@@ -404,12 +409,40 @@ int main(int argc, char** argv) {
                                 scenario, 
                                 look_ahead_point);
 
+            visualization_msgs::Marker line_strip;
+            line_strip.header.frame_id =srv.request.start.header.frame_id;
+            line_strip.header.stamp = srv.request.start.header.stamp;
+            line_strip.ns =  "points_and_lines";
+            line_strip.action = visualization_msgs::Marker::ADD;
+            line_strip.pose.orientation.w =srv.request.start.pose.orientation.w; 
+            line_strip.id = 1;
+            line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+            line_strip.scale.x = 0.1;
+            // Line strip is blue
+            line_strip.color.b = 1.0;
+            line_strip.color.a = 1.0;
+            line_strip.scale.x = 0.1;
+
+            // line_strip.points.push_back(srv.request.start.pose.position);
+            for (int i = GLOBAL_index; i < GLOBAL_path.size(); i++)
+            {
+                geometry_msgs::Point p;
+                p.x = GLOBAL_path[i](0);
+                p.y = GLOBAL_path[i](1);
+                p.z = 0;
+                line_strip.points.push_back(p);
+            }
+            timeToGetNewPlan =false;
+            // line_strip.points.push_back(srv.request.goal.pose.position);
+
+          
 
             // Make the service request
             if(client.call(srv)) {
                 // Publish the planned path
                 pub_plan.publish(srv.response.plan);
                 pub_look_ahead_point.publish(look_ahead_point); //geometry_msgs::PoseStamped
+                marker_pub.publish(line_strip);
             } else {
                 ROS_WARN_THROTTLE(1, "WARN 3: The service could not be connected");
             }
