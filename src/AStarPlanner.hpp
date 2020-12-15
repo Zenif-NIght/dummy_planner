@@ -1,4 +1,6 @@
-    #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Dense>
+#include "ros/ros.h"
+
 using namespace Eigen;
 using namespace std;
 class AStarPlanner
