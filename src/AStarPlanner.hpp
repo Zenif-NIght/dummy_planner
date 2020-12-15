@@ -10,7 +10,7 @@ private:
     {
     private:
         int m_parent;
-        Vector2i m_position;
+        Vector2d m_position;
         int m_g;
         double m_h;
         double m_f;
@@ -18,7 +18,7 @@ private:
     public:
         int parent(){return m_parent;};
         bool has_parent() { return m_parent >= 0; }
-        const Vector2i position(){return m_position;};
+        const Vector2d position(){return m_position;};
         const int g(){return m_g;};
         const double h(){return m_h;};
         const double f(){return m_f;};
@@ -28,7 +28,7 @@ private:
         void set_f(double v) { m_f = v; }
         void set_id(int v) { m_id = v; };
         M_Node() : m_parent(-1),m_g(0),m_h(0),m_f(0) {}
-        M_Node(Vector2i position, int parent=-1)
+        M_Node(Vector2d position, int parent=-1)
         : m_parent(parent), m_position(position),m_g(0),m_h(0),m_f(0){
         }
         ~M_Node(){}
@@ -40,27 +40,28 @@ private:
 
 
     MatrixXi m_maze;
-    Vector2i m_start;
-    Vector2i m_end;
+    Vector2d m_start;
+    Vector2d m_end;
 
 
     
 public:
-    typedef vector<Vector2i,Eigen::aligned_allocator<Eigen::Vector2i>> LocList;
-    typedef vector<M_Node,Eigen::aligned_allocator<Eigen::Vector2i>> NodeList;
+    typedef vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> LocList;
+    typedef vector<M_Node,Eigen::aligned_allocator<Eigen::Vector2d>> NodeList;
     
     // AStarPlanner();
-    AStarPlanner(Eigen::MatrixXi &map,Vector2i &start,Vector2i &end);
+    AStarPlanner(Eigen::MatrixXi &map,Vector2d &start,Vector2d &end);
     ~AStarPlanner();
     
     LocList run_astar();
+    void convertFrame(LocList &path, Vector2d mapPos, double resolution);
     NodeList::iterator find( NodeList&, M_Node&);
 
     friend bool operator==( AStarPlanner::M_Node&, AStarPlanner::M_Node&);
     friend bool operator==(const AStarPlanner::M_Node&, const AStarPlanner::M_Node&);
 };
 
-inline bool operator==( const Vector2i&lhs, const Vector2i&rhs)
+inline bool operator==( const Vector2d&lhs, const Vector2d&rhs)
     // { return lhs.x() == rhs.x() && lhs.y() == rhs.y(); }
     { return lhs(0) == rhs(0) && lhs(1) == rhs(1); }
 
@@ -71,9 +72,18 @@ inline bool operator==( AStarPlanner::M_Node&lhs, AStarPlanner::M_Node&rhs)
 
 // AStarPlanner::AStarPlanner(){}
 AStarPlanner::AStarPlanner(Eigen::MatrixXi &map,
-                            Vector2i &start,
-                            Vector2i &end)
+                            Vector2d &start,
+                            Vector2d &end)
     :m_maze(map),m_start(start), m_end(end){ }
+    
+
+void AStarPlanner::convertFrame(AStarPlanner::LocList &path, Vector2d mapPos, double resolution){
+    for (int i = 0; i < path.size(); i++)
+    {
+        path[i] = path[i]*resolution+mapPos;
+    }
+    
+}
 
 AStarPlanner::LocList AStarPlanner::run_astar(){
     // # Create start and end node
@@ -205,12 +215,12 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
         // children = []
         // NodeList children;
         // for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
-        for( Vector2i new_position : LocList{Vector2i(0,-1),Vector2i(0,1),Vector2i(-1,0),Vector2i(1,0),
-                                    Vector2i(-1,-1),Vector2i(-1,1),Vector2i(1,-1),Vector2i(1,1)})  //Adjacent squares
+        for( Vector2d new_position : LocList{Vector2d(0,-1),Vector2d(0,1),Vector2d(-1,0),Vector2d(1,0),
+                                    Vector2d(-1,-1),Vector2d(-1,1),Vector2d(1,-1),Vector2d(1,1)})  //Adjacent squares
         {
             // # Get node position
             // node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
-            Vector2i node_position = (current_node.position() + new_position);
+            Vector2d node_position = (current_node.position() + new_position);
 
             // # Make sure within range
             // if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
