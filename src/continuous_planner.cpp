@@ -43,6 +43,10 @@ void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg
     m_latest_scan = msg;
 }
 
+Vector2i GLOBAL_LOOKaHEAD(0,0);
+AStarPlanner::LocList GLOBAL_path;
+int GLOBAL_index = 0;
+
 void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr& msg) { //OccupancyGrid::ConstPtr
     // if(!msg || m_latest_odom != msg)return;
 
@@ -94,7 +98,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
                   (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
 
     ROS_INFO_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
-    
+
     if (cur == goal )return; 
 
     // ROS_INFO_STREAM("cur: ("<<(unsigned int)(( cur(0) - info.origin.position.x)/info.resolution)<<","<< (unsigned int)(( cur(1) - info.origin.position.x)/info.resolution)<<")");
@@ -103,9 +107,18 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     AStarPlanner aStar_planner(newMap,cur,goal);
 
-    vector<Vector2i,Eigen::aligned_allocator<Eigen::Vector2i>> path = aStar_planner.run_astar();
+    // vector<Vector2i,Eigen::aligned_allocator<Eigen::Vector2i>> path = aStar_planner.run_astar();
+    GLOBAL_path = aStar_planner.run_astar();
 
-        //TODO --> UPDATE LOOK AHEAD POINT 
+
+    //TODO --> UPDATE LOOK AHEAD POINT 
+    for (int i = 0; i < 10; i++)
+    {
+        GLOBAL_path.push_back(Vector2i(cur(0)+i,cur(1)+i));
+        /* code */
+    }
+    GLOBAL_index = 1;
+    GLOBAL_LOOKaHEAD = GLOBAL_path[GLOBAL_index];
 }
 
 bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped & pose) {
@@ -236,6 +249,17 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     // result1.pose.position.z += unit1.z*look_ahead;
     Vector2d res;
     res = vec_start + unit*look_ahead;
+    //TESTING TODO FIX THIS
+
+    //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
+    if( (Vector2d(GLOBAL_LOOKaHEAD(0),GLOBAL_LOOKaHEAD(1)) - vec_start).norm()< 0.5 ) //&& GLOBAL_index <=GLOBAL_path.size()
+    {
+        GLOBAL_index ++;
+        GLOBAL_LOOKaHEAD = GLOBAL_path[GLOBAL_index];
+    }
+
+
+    res = Vector2d(GLOBAL_LOOKaHEAD(0),GLOBAL_LOOKaHEAD(1));
     result = Vector2d2Pose(res,pnt1);
     // ROS_INFO("result1 position: %f %f %f",result1.pose.position.x, result1.pose.position.y, result1.pose.position.z);
     // ROS_INFO("result position: %f %f %f",result.pose.position.x, result.pose.position.y, result.pose.position.z);
