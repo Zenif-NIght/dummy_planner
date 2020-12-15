@@ -100,7 +100,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     vector<Vector2i,Eigen::aligned_allocator<Eigen::Vector2i>> path = aStar_planner.run_astar();
 
-        
+        //TODO --> UPDATE LOOK AHEAD POINT 
 }
 
 bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped & pose) {
