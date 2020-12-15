@@ -166,7 +166,8 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
                     ROS_ERROR_STREAM("parent: " << current->parent()->position()(0)<<","<<current->parent()->position()(1)); 
                     ROS_ERROR_STREAM("current_node: " << current->position()(0)<<","<<current->position()(1)); 
                     ROS_ERROR("\n\nA* FAILED:  current == current->parent() \n\n");
-                    abort();
+                    return LocList();
+                    // abort();
                 }
                 current = current->parent();
                 ROS_INFO_STREAM(" current = current->parent(); "); 

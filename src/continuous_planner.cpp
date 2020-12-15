@@ -31,20 +31,15 @@ ContinuousPlanner::ContinuousPlanner(const string & map_frame_id) :
 {}
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
-    if(!msg || m_latest_odom != msg)return;
     m_latest_odom = msg;    
 }
 
 void ContinuousPlanner::goalCallback(const geometry_msgs::PoseStamped::ConstPtr & msg) {
-    if(!msg || m_latest_goal != msg)
-        return;
     m_latest_goal = msg; // Store the goal
     m_flag_goal_transformed = false; // Indicate that the newest goal needs to be transformed
 }
 
 void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg) {
-    if(!msg || m_latest_scan != msg)
-        return;
     m_latest_scan = msg;
 }
 
@@ -99,6 +94,8 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
                   (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
 
     ROS_INFO_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
+    
+    if (cur == goal )return; 
 
     // ROS_INFO_STREAM("cur: ("<<(unsigned int)(( cur(0) - info.origin.position.x)/info.resolution)<<","<< (unsigned int)(( cur(1) - info.origin.position.x)/info.resolution)<<")");
 
@@ -362,24 +359,24 @@ int main(int argc, char** argv) {
         // Call the service to get the plan
         if(goal_received && pose_received && scan_received) {
 
-            if (!scenario)
-            {
-                ROS_INFO("Building a new Combined Orbit Avoid object...");
-                RangeSensor sens(scan);
-                vectorFollowingTypePoint control;
-                // control_type control = vectorFollowingTypePoint();
-                ////ROS_INFO_STREAM("sensor size: "<<sens.n_lines());
-                BetterUnicycleKinematics kin;
-                BetterUnicycleVehicle veh(kin,sens,&control);
-                //control_type vctl = vectorFollowingTypePoint(veh);
-                scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
-                                    // BetterUnicycleVehicle(BetterUnicycleKinematics(),
-                                    //                     RangeSensor(scan),
-                                    //                     vectorFollowingTypePoint()),
-                                    veh,
-                                    Pose2Vector2d(srv.request.goal));
-                ROS_INFO("Done building Combined Orbit Avoid object");
-            }
+            // if (!scenario)
+            // {
+            //     ROS_INFO("Building a new Combined Orbit Avoid object...");
+            //     RangeSensor sens(scan);
+            //     vectorFollowingTypePoint control;
+            //     // control_type control = vectorFollowingTypePoint();
+            //     ////ROS_INFO_STREAM("sensor size: "<<sens.n_lines());
+            //     BetterUnicycleKinematics kin;
+            //     BetterUnicycleVehicle veh(kin,sens,&control);
+            //     //control_type vctl = vectorFollowingTypePoint(veh);
+            //     scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
+            //                         // BetterUnicycleVehicle(BetterUnicycleKinematics(),
+            //                         //                     RangeSensor(scan),
+            //                         //                     vectorFollowingTypePoint()),
+            //                         veh,
+            //                         Pose2Vector2d(srv.request.goal));
+            //     ROS_INFO("Done building Combined Orbit Avoid object");
+            // }
             // get the look ahead point 
             calculateLookAheadPoint(srv.request.start,
                                 srv.request.goal,
