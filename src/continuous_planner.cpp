@@ -47,7 +47,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     nav_msgs::MapMetaData info = msg->info;
     // ROS_INFO("Got map %d %d", info.width, info.height);
     // std::vector<std::vector<int>> newMap(info.height,info.width );
-    Eigen::MatrixXd newMap(info.height,info.width);
+    Eigen::MatrixXi newMap(info.height,info.width);
     int cur_map_size = 0;
     
     for(int row=0; row<msg->info.width; row++)
@@ -66,25 +66,40 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // ROS_INFO_STREAM("Cur map size: "<< newMap); // 91 x 91
 
     // given latest Goal
+
+
     if( !m_latest_odom || !m_latest_goal || cur_map_size <= m_last_map_size )
         return; //no need to update Plan
 
     m_last_map_size = cur_map_size;
     ROS_INFO_STREAM("ccupancyCallback map_size: "<< m_last_map_size);                                         
 
-    Vector2d cur(m_latest_odom->pose.pose.position.x,
-                     m_latest_odom->pose.pose.position.y);
-    Vector2d goal(m_latest_goal->pose.position.x,
-                     m_latest_goal->pose.position.y);
+    // Vector2d cur(m_latest_odom->pose.pose.position.x,
+    //                  m_latest_odom->pose.pose.position.y);
+    // Vector2d goal(m_latest_goal->pose.position.x,
+    //                  m_latest_goal->pose.position.y);
+
+ // https://answers.ros.org/question/10268/where-am-i-in-the-map/?answer=15060#post-id-15060
+    // grid_x = (unsigned int)((map_x - map.info.origin.position.x) / map.info.resolution)
+    // grid_y = (unsigned int)((map_y - map.info.origin.position.y) / map.info.resolution)
+
+    Vector2i cur((int)((m_latest_odom->pose.pose.position.x - info.origin.position.x)/info.resolution),
+                 (int)((m_latest_odom->pose.pose.position.y - info.origin.position.x)/info.resolution) );
+    
+
+    Vector2i goal((int)((m_latest_goal->pose.position.x - info.origin.position.x)/info.resolution),
+                  (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
+
+    ROS_INFO_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
+
+    // ROS_INFO_STREAM("cur: ("<<(unsigned int)(( cur(0) - info.origin.position.x)/info.resolution)<<","<< (unsigned int)(( cur(1) - info.origin.position.x)/info.resolution)<<")");
+
+    ROS_INFO_STREAM("info.origin.position: ("<< info.origin.position.x<<","<<info.origin.position.y<<")");
 
     AStarPlanner aStar_planner(newMap,cur,goal);
-    // AStarPlanner aStar_planner();
-    // for(int i=0; i<info.height*info.width; i++)
-    //     {
-    //         // if(msg->data[i]==-1)
-    //         //     Ngray++;
-    //         m_occupancy_grid.data[i] = msg->data[i];
-    //     }
+
+    vector<Vector2i,Eigen::aligned_allocator<Eigen::Vector2i>> path = aStar_planner.run_astar();
+
         
 }
 
