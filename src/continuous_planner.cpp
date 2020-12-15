@@ -43,7 +43,6 @@ void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg
     m_latest_scan = msg;
 }
 
-Vector2d GLOBAL_LOOKaHEAD(0,0);
 AStarPlanner::LocList GLOBAL_path;
 int GLOBAL_index = 0;
 
@@ -97,7 +96,10 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     Vector2d goal((int)((m_latest_goal->pose.position.x - info.origin.position.x)/info.resolution),
                   (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
 
-    ROS_INFO_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
+    ROS_WARN_STREAM("cur: ("<<m_latest_odom->pose.pose.position.x<<","<<m_latest_odom->pose.pose.position.y<<")");
+    ROS_WARN_STREAM("goal: ("<<m_latest_goal->pose.position.x<<","<<m_latest_goal->pose.position.y<<")");
+    ROS_WARN_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
+    ROS_WARN_STREAM("goal: ("<<goal(0)<<","<<goal(1)<<")");
 
     if (cur == goal )return; 
 
@@ -108,6 +110,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     AStarPlanner aStar_planner(newMap,cur,goal);
 
     // vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> path = aStar_planner.run_astar();
+    GLOBAL_path = AStarPlanner::LocList();
     GLOBAL_path = aStar_planner.run_astar();
 
     aStar_planner.convertFrame(GLOBAL_path,
@@ -120,9 +123,8 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     //     /* code */
     // }
     ROS_WARN_STREAM("GLOBAL_path: update");
-    GLOBAL_index = 1;
-    GLOBAL_LOOKaHEAD = GLOBAL_path[GLOBAL_index];
-    ROS_INFO_STREAM("GLOBAL_LOOKaHEAD: " << GLOBAL_LOOKaHEAD(0)<<","<<GLOBAL_LOOKaHEAD(1)); 
+    GLOBAL_index = 2;
+    ROS_WARN_STREAM("GLOBAL_LOOKaHEAD: " << GLOBAL_path[GLOBAL_index](0)<<","<<GLOBAL_path[GLOBAL_index](1)); 
 
 }
 
@@ -221,14 +223,8 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     Vector2d vec_start = Pose2Vector2d(pnt1), vec_goal = Pose2Vector2d(pnt2);
     
     // Calculate the distance between points
-    // geometry_msgs::Vector3 diff1;
-    // diff1.x = pnt2.pose.position.x - pnt1.pose.position.x;
-    // diff1.y = pnt2.pose.position.y - pnt1.pose.position.y;
-    // diff1.z = pnt2.pose.position.z - pnt1.pose.position.z;
-    // double dist1 = sqrt( diff1.x*diff1.x + diff1.y*diff1.y + diff1.z*diff1.z );
     Vector2d diff = vec_goal - vec_start;
     double dist = diff.norm();
-    // ROS_INFO("dist1: %f, dist: %f", dist1, dist);
 
     // If distance is less than the look_ahead then we only care about point 2
     if (dist < look_ahead) {
@@ -237,35 +233,28 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     }
 
     // Get the unit vector between the two points
-    // geometry_msgs::Vector3 unit1;
-    // unit1.x = diff1.x / dist;
-    // unit1.y = diff1.y / dist;
-    // unit1.z = diff1.z / dist;
     Vector2d unit = diff / dist;
-    // ROS_INFO("unit1: %f %f",unit1.x,unit1.y);
-    // ROS_INFO("unit : %f %f",unit.x(),unit.y());
 
     // Calculate the new point
-    // geometry_msgs::PoseStamped result1;
-    // geometry_msgs::PoseStamped result1;
-    // result1 = pnt1;
-    // result1.pose.position.x += unit1.x*look_ahead;
-    // result1.pose.position.y += unit1.y*look_ahead;
-    // result1.pose.position.z += unit1.z*look_ahead;
     Vector2d res;
     res = vec_start + unit*look_ahead;
     //TESTING TODO FIX THIS
+    if(GLOBAL_index >= GLOBAL_path.size())
+        return;
 
+    Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
     //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
-    if( ((GLOBAL_LOOKaHEAD - vec_start).norm() < 0.25)
-         && GLOBAL_index < GLOBAL_path.size() )
+    if( (LOOKaHEAD_pt - vec_start).norm() < 0.25)
     {
         GLOBAL_index ++;
-        GLOBAL_LOOKaHEAD = GLOBAL_path[GLOBAL_index];
+        LOOKaHEAD_pt = GLOBAL_path[GLOBAL_index];
+        ROS_WARN_STREAM("NEW LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"#################");
+
     }
 
+    // ROS_INFO_STREAM("SET LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"###");
 
-    res = GLOBAL_LOOKaHEAD;
+    res = LOOKaHEAD_pt;
     result = Vector2d2Pose(res,pnt1);
     // ROS_INFO("result1 position: %f %f %f",result1.pose.position.x, result1.pose.position.y, result1.pose.position.z);
     // ROS_INFO("result position: %f %f %f",result.pose.position.x, result.pose.position.y, result.pose.position.z);
