@@ -90,13 +90,18 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
  // https://answers.ros.org/question/10268/where-am-i-in-the-map/?answer=15060#post-id-15060
     // grid_x = (unsigned int)((map_x - map.info.origin.position.x) / map.info.resolution)
     // grid_y = (unsigned int)((map_y - map.info.origin.position.y) / map.info.resolution)
+    geometry_msgs::PoseStamped odom_pose;
+    geometry_msgs::PoseStamped goal_pose;
 
-    Vector2d cur((int)((m_latest_odom->pose.pose.position.x - info.origin.position.x)/info.resolution),
-                 (int)((m_latest_odom->pose.pose.position.y - info.origin.position.x)/info.resolution) );
+    toMapFrame(m_latest_odom->pose.pose);
+    toMapFrame(m_latest_goal);
+
+    Vector2d cur((int)((odom_pose->pose.pose.position.x - info.origin.position.x)/info.resolution),
+                 (int)((odom_pose->pose.pose.position.y - info.origin.position.x)/info.resolution) );
     
 
-    Vector2d goal((int)((m_latest_goal->pose.position.x - info.origin.position.x)/info.resolution),
-                  (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
+    Vector2d goal((int)((goal_pose->pose.position.x - info.origin.position.x)/info.resolution),
+                  (int)((goal_pose->pose.position.y - info.origin.position.x)/info.resolution));
 
     ROS_WARN_STREAM("cur: ("<<m_latest_odom->pose.pose.position.x<<","<<m_latest_odom->pose.pose.position.y<<")");
     ROS_WARN_STREAM("goal: ("<<m_latest_goal->pose.position.x<<","<<m_latest_goal->pose.position.y<<")");
@@ -129,6 +134,26 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     timeToGetNewPlan = true;
     ROS_WARN_STREAM("GLOBAL_LOOKaHEAD: " << GLOBAL_path[GLOBAL_index](0)<<","<<GLOBAL_path[GLOBAL_index](1)); 
 
+}
+
+bool ContinuousPlanner::toMapFrame( geometry_msgs::PoseStamped &pose){
+   
+    // Transform the goal pose to the latest map frame
+    try {
+        // Transform the goal
+        pose = m_tf_buffer.transform<geometry_msgs::PoseStamped>(
+            pose, 
+            map_frame_id, 
+            ros::Duration(1.0)
+            );
+        // Indicate that the goal has been received
+        return true;
+    } catch (tf2::TransformException &ex) {
+        ROS_WARN_THROTTLE(1, "WARN  ContinuousPlanner::toMapFrame() Could not transform to map frame: %s", ex.what());
+        return false;
+    }
+
+    return false;
 }
 
 bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped & pose) {
@@ -243,11 +268,14 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     res = vec_start + unit*look_ahead;
     //TESTING TODO FIX THIS
     if(GLOBAL_index >= GLOBAL_path.size())
+    {
+        result = Vector2d2Pose(res,pnt1);
         return;
+    }
 
     Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
     //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
-    if( (LOOKaHEAD_pt - vec_start).norm() < 0.25)
+    if( (LOOKaHEAD_pt - vec_start).norm() < 0.5)
     {
         GLOBAL_index ++;
         LOOKaHEAD_pt = GLOBAL_path[GLOBAL_index];
