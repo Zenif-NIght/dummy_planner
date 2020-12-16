@@ -311,13 +311,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
         // //ROS_INFO("result position: "+result.pose.position);
     }
 
-<<<<<<< HEAD
     if (vector_field_enabled)
-=======
-    Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
-    //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
-    if( (LOOKaHEAD_pt - vec_start).norm() < 0.5)
->>>>>>> 9d50e26bd3566493d9ecb017ef40155bc13a4713
     {
         // Vector Field 'Integration'
         // Get orientation angle, theta
