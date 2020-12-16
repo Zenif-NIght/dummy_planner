@@ -16,8 +16,7 @@
 #include "control_type.hpp"
 #include <visualization_msgs/Marker.h>
 
-#include <dynamic_reconfigure/server.h>
-#include <dummy_planner/LookAheadConfig.h>
+
 
 #include "AStarPlanner.hpp"
 
@@ -33,12 +32,39 @@ ContinuousPlanner::ContinuousPlanner(const string & map_frame_id) :
     m_tf_listener(m_tf_buffer),
     m_last_map_size(0)
 {}
+
+const int VECTOR_FILD_CONFIG = 0;
+const int A_STAR_CONFIG = 1;
+const int DIJKSTRA_CONFIG = 2;
+const int BEST_FIRST_CONFIG = 3;
+
+int GLOBLE_PLANNING_PARAMETER =1;
+
 double LOOKAHEAD = 0.0;
-int  plannning_parameter =0;
 void reconfigureCallback(dummy_planner::LookAheadConfig & config, uint32_t level){
     ROS_INFO("Reconfigure Requested ");//%d", config.int_param, config.double_param, );
     LOOKAHEAD = config.LookAhead;
-    plannning_parameter = config.plannning_parameter;
+    switch (config.plannning_parameter)
+    {
+    case 0:
+        ROS_INFO("Reconfigure Requested Vector_fild");
+        GLOBLE_PLANNING_PARAMETER = 0;
+        break;
+    case 1:
+        ROS_INFO("Reconfigure Requested A_Star");
+        GLOBLE_PLANNING_PARAMETER = 1;
+        break;
+    case 2:
+        ROS_INFO("Reconfigure Requested Dijkstra");
+        GLOBLE_PLANNING_PARAMETER = 2;
+        break;
+    case 3:
+        ROS_INFO("Reconfigure Requested Best_First");
+        GLOBLE_PLANNING_PARAMETER = 3;
+        break;
+    default:
+        break;
+    }
 }
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
@@ -56,7 +82,6 @@ void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg
 
 AStarPlanner::LocList GLOBAL_path;
 int GLOBAL_index = 0;
-bool timeToGetNewPlan = false;
 
 void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr& msg) { //OccupancyGrid::ConstPtr
     // if(!msg || m_latest_odom != msg)return;
@@ -144,7 +169,6 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // }
     ROS_WARN_STREAM("GLOBAL_path: update");
     GLOBAL_index = 1;
-    timeToGetNewPlan = true;
     ROS_WARN_STREAM("GLOBAL_LOOKaHEAD: " << GLOBAL_path[GLOBAL_index](0)<<","<<GLOBAL_path[GLOBAL_index](1)); 
 
 }
@@ -283,7 +307,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     Vector2d res;
     res = vec_start + unit*look_ahead;
     
-    if (a_star_enabled)
+    if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG)
     {
         //TESTING TODO FIX THIS
         if(GLOBAL_index >= GLOBAL_path.size())
@@ -311,7 +335,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
         // //ROS_INFO("result position: "+result.pose.position);
     }
 
-    if (vector_field_enabled)
+    if (GLOBLE_PLANNING_PARAMETER == VECTOR_FILD_CONFIG)
     {
         // Vector Field 'Integration'
         // Get orientation angle, theta
@@ -417,10 +441,11 @@ int main(int argc, char** argv) {
     dynamic_reconfigure::Server<dummy_planner::LookAheadConfig>::CallbackType f;
     dummy_planner::LookAheadConfig default_config;
     default_config.LookAhead = look_ahead_dub;
+    default_config.plannning_parameter =1;
     LOOKAHEAD = look_ahead_dub;
     reconfig_server.setConfigDefault(default_config);
 
-    f = boost::bind(&reconfigureCallback, _1, _2);
+    f = boost::bind(& reconfigureCallback, _1, _2);
     reconfig_server.setCallback(f);
 
 
@@ -450,7 +475,7 @@ int main(int argc, char** argv) {
         // Call the service to get the plan
         if(goal_received && pose_received && scan_received) {
 
-            if (planner.VectorFieldEnabled())
+            if (GLOBLE_PLANNING_PARAMETER == VECTOR_FILD_CONFIG)
             {
                 if (!scenario)
                 {
@@ -476,7 +501,8 @@ int main(int argc, char** argv) {
                                 look_ahead_point);
 
             visualization_msgs::Marker line_strip;
-            if (planner.AStarEnabled())
+
+            if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG)
             {
                 line_strip.header.frame_id =srv.request.start.header.frame_id;
                 line_strip.header.stamp = srv.request.start.header.stamp;
@@ -500,7 +526,6 @@ int main(int argc, char** argv) {
                     p.z = 0;
                     line_strip.points.push_back(p);
                 }
-                timeToGetNewPlan =false;
                 // line_strip.points.push_back(srv.request.goal.pose.position);
             }
           

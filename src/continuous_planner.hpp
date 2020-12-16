@@ -13,6 +13,9 @@
 #include "std_msgs/Header.h"
 #include "nav_msgs/MapMetaData.h"
 
+#include <dynamic_reconfigure/server.h>
+#include <dummy_planner/LookAheadConfig.h>
+
 #include <string>
 
 namespace dummy_planner {
