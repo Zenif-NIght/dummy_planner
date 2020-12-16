@@ -33,6 +33,7 @@ public:
     Vector2d getObstacle(int k);
     vector<double> x_state();
     Vector2d vectorFieldControl(int,field,const vector<double>&);
+    vector<double> kinematics(int t, const vector<double> &x, const vector<double> &u);
 };
 
 Scenario::Scenario(Vehicle &veh)
@@ -74,4 +75,9 @@ Vector2d Scenario::vectorFieldControl(int t,field f,const vector<double>&x)
 {
     ROS_INFO("Scenario: vectorFieldControl()");
     return m_vehicle.vectorFieldControl(t,f,x);
+}
+
+vector<double> Scenario::kinematics(int t, const vector<double> &x, const vector<double> &u)
+{
+    return m_vehicle.kinematics(t,x,u);
 }

@@ -68,6 +68,20 @@ public:
      */
     const std::string map_frame_id;
 
+    /*!
+     * \brief DoVectorField enable/disable vector field control
+     * \param f boolean flag; true = enable vector field
+     */
+    void DoVectorField(bool f) { m_do_vector_field = f; }
+
+    /*!
+     * \brief DoVectorField enable/disable vector field control
+     * \return return boolean flag; true = vector field enabled
+     */
+    bool VectorFieldEnabled() { return m_do_vector_field; }
+    void DoAStar(bool f) { m_do_astar = f; }
+    bool AStarEnabled() { return m_do_astar; }
+
     // /*!
     //  * \brief Pose2Vector2d convert a pose to an Eigen Vector2d
     //  */
@@ -79,7 +93,13 @@ public:
     // geometry_msgs::PoseStamped Vector2d2Pose(const Eigen::Vector2d & vec, const geometry_msgs::PoseStamped &ptemplate);
 private:
     /*!
-     * \brief m_last_map_size number of edages found
+     * \brief m_do_vector_field flag to enable vector field control
+     */
+    bool m_do_vector_field;
+    bool m_do_astar;
+
+    /*!
+     * \brief m_last_map_size number of edges found
      */
     int m_last_map_size;
 

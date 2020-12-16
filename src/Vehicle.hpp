@@ -62,6 +62,7 @@ public:
     Vector2d getObstacle(int k);
     Vector2d vectorFieldControl(int,field,const vector<double>&);
     Vector2d getVelocities(int t, const vector<double> &u);
+    vector<double> kinematics(int t, const vector<double> &x, const vector<double> &u);
 };
 
 // // set q, the coordinates or position
@@ -140,4 +141,9 @@ Vector2d Vehicle::vectorFieldControl(int t,field f,const vector<double>&x)
 Vector2d Vehicle::getVelocities(int t, const vector<double> &u)
 {
     m_kinematics.getVelocities(t,m_x,u);
+}
+
+vector<double> Vehicle::kinematics(int t, const vector<double> &x, const vector<double> &u)
+{
+    return m_kinematics.kinematics(t,x,u);
 }

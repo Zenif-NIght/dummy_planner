@@ -29,6 +29,7 @@ public:
     // Abstract methods
     //virtual vector<double> kinematics(int t, const vector<double>& x, const vector<double>& u);
     virtual Vector2d getVelocities(int t, const vector<double>& x, const vector<double>& u);
+    vector<double> kinematics(int t, const vector<double> &x, const vector<double> &u);
 };
 
 // Constructor
@@ -57,4 +58,11 @@ Vector2d VehicleKinematics::getVelocities(int t, const vector<double>& x, const 
     // virtual function
     ROS_ERROR("VehicleKinematics getVelocities() base class invoked!");
     return Vector2d(0,0);
+}
+
+vector<double> VehicleKinematics::kinematics(int t, const vector<double> &x, const vector<double> &u)
+{
+    // virtual function
+    ROS_ERROR("VehicleKinematics kinematics() base class invoked!");
+    return vector<double>(m_dimensions,0);
 }

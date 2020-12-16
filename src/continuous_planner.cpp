@@ -224,9 +224,12 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
                             double look_ahead,
                             const sensor_msgs::LaserScan &scan,
                             Scenario *scenario,
+                            bool a_star_enabled,
+                            bool vector_field_enabled,
                             geometry_msgs::PoseStamped & result)
 {
-    Vector2d vec_start = Pose2Vector2d(pnt1), vec_goal = Pose2Vector2d(pnt2);
+    Vector2d vec_start = Pose2Vector2d(pnt1), 
+             vec_goal = Pose2Vector2d(pnt2);
     
     // Calculate the distance between points
     Vector2d diff = vec_goal - vec_start;
@@ -244,59 +247,67 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     // Calculate the new point
     Vector2d res;
     res = vec_start + unit*look_ahead;
-    //TESTING TODO FIX THIS
-    if(GLOBAL_index >= GLOBAL_path.size())
+    
+    if (a_star_enabled)
     {
+        //TESTING TODO FIX THIS
+        if(GLOBAL_index >= GLOBAL_path.size())
+        {
+            result = Vector2d2Pose(res,pnt1);
+            return;
+        }
+
+        Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
+        //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
+        if( (LOOKaHEAD_pt - vec_start).norm() < 0.25)
+        {
+            GLOBAL_index ++;
+            LOOKaHEAD_pt = GLOBAL_path[GLOBAL_index];
+            ROS_WARN_STREAM("NEW LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"#################");
+
+        }
+
+        // ROS_INFO_STREAM("SET LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"###");
+
+        res = LOOKaHEAD_pt;
         result = Vector2d2Pose(res,pnt1);
-        return;
+        // ROS_INFO("result1 position: %f %f %f",result1.pose.position.x, result1.pose.position.y, result1.pose.position.z);
+        // ROS_INFO("result position: %f %f %f",result.pose.position.x, result.pose.position.y, result.pose.position.z);
+        // //ROS_INFO("result position: "+result.pose.position);
     }
 
-    Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
-    //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
-    if( (LOOKaHEAD_pt - vec_start).norm() < 0.25)
+    if (vector_field_enabled)
     {
-        GLOBAL_index ++;
-        LOOKaHEAD_pt = GLOBAL_path[GLOBAL_index];
-        ROS_WARN_STREAM("NEW LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"#################");
+        // Vector Field 'Integration'
+        // Get orientation angle, theta
+        double theta = tf::getYaw(pnt1.pose.orientation);
+        // Put current orientation into vehicle state
+        ROS_INFO("loop: Insert current orientation");
+        scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
+        // Read latest scan data into model
+        ROS_INFO("loop: detect obstacles");
+        scenario->getObstacleDetections(scan);
+        
+        // Compute control inputs
+        // TODO: time
+        int t=0;
+        ROS_INFO("loop: get control inputs");
+        vector<double> x_state = scenario->x_state();
+        Vector2d u = scenario->control(t,x_state);
+        ROS_INFO_STREAM("loop: control u = "<<u);
+
+        // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
+        // vector<double> xdot = scenario->Kinematics(t,x_state, u); 
+
+        // % Update the state
+        // obj.vehicle.x = obj.vehicle.x + obj.dt * xdot;
+        // vector<double> new_x = x_state + dt * xdot;
+        // scenario->update_state(new_x);
+        
+        // Set look-ahead based on new state.
 
     }
-
-    // ROS_INFO_STREAM("SET LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"###");
-
-    res = LOOKaHEAD_pt;
-    result = Vector2d2Pose(res,pnt1);
-    // ROS_INFO("result1 position: %f %f %f",result1.pose.position.x, result1.pose.position.y, result1.pose.position.z);
-    // ROS_INFO("result position: %f %f %f",result.pose.position.x, result.pose.position.y, result.pose.position.z);
-    // //ROS_INFO("result position: "+result.pose.position);
     return;
-    
-    // Vector Field 'Integration'
-    // Get orientation angle, theta
-    double theta = tf::getYaw(pnt1.pose.orientation);
-    // Put current orientation into vehicle state
-    ROS_INFO("loop: Insert current orientation");
-    scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
-    // Read latest scan data into model
-    ROS_INFO("loop: detect obstacles");
-    scenario->getObstacleDetections(scan);
-    
-    // Compute control inputs
-    // TODO: time
-    int t=0;
-    ROS_INFO("loop: get control inputs");
-    vector<double> x_state = scenario->x_state();
-    Vector2d u = scenario->control(t,x_state);
-    ROS_INFO_STREAM("loop: control u = "<<u);
-
-    // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
-    // Vector2d xdot = scenario->Kinematics(t,x_state, u); 
-
-    // % Update the state
-    // obj.vehicle.x = obj.vehicle.x + obj.dt * xdot;
-    // vector<double> new_x = x_state + dt * xdot;
-    // scenario->update_state(new_x);
-    
-    // Set look-ahead based on new state.
 }
 
 
@@ -391,58 +402,59 @@ int main(int argc, char** argv) {
         // Call the service to get the plan
         if(goal_received && pose_received && scan_received) {
 
-            // if (!scenario)
-            // {
-            //     ROS_INFO("Building a new Combined Orbit Avoid object...");
-            //     RangeSensor sens(scan);
-            //     vectorFollowingTypePoint control;
-            //     // control_type control = vectorFollowingTypePoint();
-            //     ////ROS_INFO_STREAM("sensor size: "<<sens.n_lines());
-            //     BetterUnicycleKinematics kin;
-            //     BetterUnicycleVehicle veh(kin,sens,&control);
-            //     //control_type vctl = vectorFollowingTypePoint(veh);
-            //     scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
-            //                         // BetterUnicycleVehicle(BetterUnicycleKinematics(),
-            //                         //                     RangeSensor(scan),
-            //                         //                     vectorFollowingTypePoint()),
-            //                         veh,
-            //                         Pose2Vector2d(srv.request.goal));
-            //     ROS_INFO("Done building Combined Orbit Avoid object");
-            // }
+            if (planner.VectorFieldEnabled())
+            {
+                if (!scenario)
+                {
+                    ROS_INFO("Building a new Combined Orbit Avoid object...");
+                    RangeSensor sens(scan); // range sensor handler
+                    vectorFollowingTypePoint control; // control field
+                    BetterUnicycleKinematics kin; // vehicle kinematics
+                    BetterUnicycleVehicle veh(kin,sens,&control); // vehicle
+                    scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
+                                        veh, Pose2Vector2d(srv.request.goal));
+                    ROS_INFO("Done building Combined Orbit Avoid object");
+                }
+            }
+
             // get the look ahead point 
             calculateLookAheadPoint(srv.request.start,
                                 srv.request.goal,
                                 look_ahead_dub,
                                 scan,
                                 scenario, 
+                                planner.AStarEnabled(),
+                                planner.VectorFieldEnabled(),
                                 look_ahead_point);
 
             visualization_msgs::Marker line_strip;
-            line_strip.header.frame_id =srv.request.start.header.frame_id;
-            line_strip.header.stamp = srv.request.start.header.stamp;
-            line_strip.ns =  "points_and_lines";
-            line_strip.action = visualization_msgs::Marker::ADD;
-            line_strip.pose.orientation.w =srv.request.start.pose.orientation.w; 
-            line_strip.id = 1;
-            line_strip.type = visualization_msgs::Marker::LINE_STRIP;
-            line_strip.scale.x = 0.1;
-            // Line strip is blue
-            line_strip.color.b = 1.0;
-            line_strip.color.a = 1.0;
-            line_strip.scale.x = 0.1;
-
-            // line_strip.points.push_back(srv.request.start.pose.position);
-            for (int i = GLOBAL_index; i < GLOBAL_path.size(); i++)
+            if (planner.AStarEnabled())
             {
-                geometry_msgs::Point p;
-                p.x = GLOBAL_path[i](0);
-                p.y = GLOBAL_path[i](1);
-                p.z = 0;
-                line_strip.points.push_back(p);
-            }
-            timeToGetNewPlan =false;
-            // line_strip.points.push_back(srv.request.goal.pose.position);
+                line_strip.header.frame_id =srv.request.start.header.frame_id;
+                line_strip.header.stamp = srv.request.start.header.stamp;
+                line_strip.ns =  "points_and_lines";
+                line_strip.action = visualization_msgs::Marker::ADD;
+                line_strip.pose.orientation.w =srv.request.start.pose.orientation.w; 
+                line_strip.id = 1;
+                line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+                line_strip.scale.x = 0.1;
+                // Line strip is blue
+                line_strip.color.b = 1.0;
+                line_strip.color.a = 1.0;
+                line_strip.scale.x = 0.1;
 
+                // line_strip.points.push_back(srv.request.start.pose.position);
+                for (int i = GLOBAL_index; i < GLOBAL_path.size(); i++)
+                {
+                    geometry_msgs::Point p;
+                    p.x = GLOBAL_path[i](0);
+                    p.y = GLOBAL_path[i](1);
+                    p.z = 0;
+                    line_strip.points.push_back(p);
+                }
+                timeToGetNewPlan =false;
+                // line_strip.points.push_back(srv.request.goal.pose.position);
+            }
           
 
             // Make the service request

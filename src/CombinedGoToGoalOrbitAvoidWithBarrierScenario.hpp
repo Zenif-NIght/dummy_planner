@@ -120,3 +120,5 @@ Vector2d CombinedGoToGoalOrbitAvoidWithBarrierScenario::control(int t, const vec
     ROS_INFO("get fector field control variables");
     return VectorFieldScenario::control(t,x);
 }
+
+
