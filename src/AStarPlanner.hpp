@@ -45,7 +45,7 @@ private:
     Vector2d m_start;
     Vector2d m_end;
 
-
+    bool open_flag, loop_flag, path_flag;
     
 public:
     typedef vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> LocList;
@@ -57,6 +57,9 @@ public:
     LocList run_astar();
     void convertFrame(LocList &path, Vector2d mapPos, double resolution);
     NodeList::iterator find( NodeList&, M_Node&);
+    void set_open_flag(bool f) { open_flag = f; }
+    void set_loop_flag(bool f) { loop_flag = f; }
+    void set_path_flag(bool f) { path_flag = f; }
 
     friend bool operator==( AStarPlanner::M_Node&, AStarPlanner::M_Node&);
     friend bool operator==(const AStarPlanner::M_Node&, const AStarPlanner::M_Node&);
@@ -71,7 +74,7 @@ inline bool operator==( AStarPlanner::M_Node&lhs, AStarPlanner::M_Node&rhs)
 AStarPlanner::AStarPlanner(Eigen::MatrixXi &map,
                             Vector2d &start,
                             Vector2d &end)
-    :m_maze(map),m_start(start), m_end(end){ }
+    :m_maze(map),m_start(start), m_end(end), open_flag(false), loop_flag(false) { }
     
 
 void AStarPlanner::convertFrame(AStarPlanner::LocList &path, Vector2d mapPos, double resolution){
@@ -108,31 +111,33 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     open_list.push_back(start_node);
 
     // # Loop until you find the end
-    ROS_INFO_STREAM("😅  Loop until you find found the goal"); 
+    // ROS_INFO_STREAM("😅  Loop until you find found the goal"); 
     int loop_count =0;
     while(open_list.size() > 0)
     {
-        // ROS_INFO_STREAM("\nloop_count: "<< loop_count<<"\r"); 
+        if (loop_flag) {
+           ROS_INFO_STREAM("\nloop_count: "<< loop_count<<"\r"); 
+        }
         loop_count ++;
-        // # Get the current node
 
+        // # Get the current node
         M_Node current_node = open_list[0];
         int current_index = 0;
-
-        for(int index=0; index<open_list.size(); index++)
+        // Find node on open list with smallest f score
+        for(int index=1; index<open_list.size(); index++)
         {
             M_Node item = open_list[index];
-
             if (item.f() < current_node.f())
             {
-
                 current_node = item;
                 current_index = index;
             }
         }
 
+        if (open_flag) {
+            ROS_INFO_STREAM("Current node: ("<<current_node.position()(0)<<","<<current_node.position()(1)<<") f:"<<current_node.f());
+        }
         // # Pop current off open list, add to closed list
-    
         open_list.erase(open_list.begin()+current_index);
 
         closed_list.push_back(current_node);
@@ -143,35 +148,32 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
         // # Found the goal
         if (current_node == end_node)
         {
-            ROS_INFO_STREAM("Starting -> Found the goal");
-            ROS_INFO_STREAM("current_node: " << current_node.position()(0)<<","<<current_node.position()(1)); 
-        
+            if (path_flag) {
+                ROS_INFO_STREAM("Found the goal!!");
+            }
             LocList path;
             int current = current_node.id();
-            // while current is not None:
+            // while current is not nil
             while(current>=0)
             {
-                ROS_INFO_STREAM("  path item: " << closed_list[current].position()(0)<<","<<closed_list[current].position()(1)); 
-
+                if (path_flag) {
+                    ROS_INFO_STREAM("  path item: " << closed_list[current].position()(0)<<","<<closed_list[current].position()(1)); 
+                }
                 path.push_back(closed_list[current].position());
-
-                current = closed_list[current].parent();
-                // ROS_INFO_STREAM(" current = current->parent(); "); 
+                current = closed_list[current].parent(); // parent 
             }
-            // return path[::-1] # Return reversed path
-            reverse(path.begin(),path.end());
-            ROS_INFO_STREAM(" Found the goal END"); 
+            reverse(path.begin(),path.end()); // reverse path: start is in front
             return path;
         }
 
-        // # Generate Nabors
+        // # Generate Neighbors
         for( Vector2d new_position : LocList{Vector2d(0,-1),Vector2d(0,1),Vector2d(-1,0),Vector2d(1,0),
                                     Vector2d(-1,-1),Vector2d(-1,1),Vector2d(1,-1),Vector2d(1,1)})  //Adjacent squares
         {
             // # Get node position
             Vector2d node_position = (current_node.position() + new_position);
 
-            // # Make sure within range
+            // # Make sure within maze
             if (node_position[0] > (m_maze.rows()-1) or node_position[0] < 0 or node_position[1] > (m_maze.cols() -1) or node_position[1] < 0)
                 continue;
 
@@ -180,27 +182,23 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
                 continue;
 
             // # Create new node
-
-            // if(current_node.has_parent()) ROS_INFO_STREAM("Create new node from parent("<<current_node.position()(0)<<","<<current_node.position()(1)<<")  p("<<closed_list[current_node.parent()].position()(0)<<","<<closed_list[current_node.parent()].position()(1)<<")");
-            // else ROS_INFO_STREAM("Create new node from parent("<<current_node.position()(0)<<","<<current_node.position()(1)<<")  p(-,-)");
-            // ROS_INFO_STREAM("   at position ("<<node_position(0)<<","<<node_position(1)<<")");
-           
             M_Node neighbor = M_Node(node_position,current_node.id());
 
-            // ROS_INFO_STREAM("Checking if find neighbor " << neighbor.position()(0)<<","<<neighbor.position()(1)); 
-
+            // if already seen (closed_list), skip
             NodeList::iterator it = find(closed_list,neighbor);
             if (it != closed_list.end()) continue;
 
             // # Create the f, g, and h values
-
-            neighbor.set_g(current_node.g()+1);
+            neighbor.set_g( current_node.g()+1 );
             neighbor.set_h( (neighbor.position() - end_node.position()).squaredNorm() );
             neighbor.set_f( neighbor.g() + neighbor.h() );
 
+            // Check if child is in open_list
+            // if so, skip, unless g-cost is smaller
             it = find(open_list,neighbor);
             if (it != open_list.end() && neighbor.g() > it->g()) continue;
 
+            // Add to open list
             open_list.push_back(neighbor);
         }
     } 
@@ -223,15 +221,7 @@ AStarPlanner::NodeList::iterator AStarPlanner::find( NodeList& list, M_Node &nod
     for(NodeList::iterator m = list.begin(); m!=list.end(); m++)
     {
         // ROS_INFO_STREAM("  item: " << m->position()(0)<<","<<m->position()(1) ); 
-        if (*m == node) {
-            // if( m->parent() != node.parent()){
-            //     ROS_ERROR("\n m.parent() != node.parent()"); 
-            //     ROS_ERROR_STREAM("m " << m->position()(0)<<","<<m->position()(1)); 
-            //     // ROS_ERROR("node " << node.position()(0)<<","<<node.position()(1)); 
-            // }
-
-            return m; 
-        }
+        if (*m == node) { return m; }
     }
     return list.end();
 }
