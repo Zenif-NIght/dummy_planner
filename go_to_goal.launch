@@ -15,7 +15,7 @@
 
   <group if="$(arg run_occupancy_grid)">
       <include file="$(find occupancy_grid)/launch/occupancy_grid.launch">
-        <arg name="resolution" value="0.5"/>
+        <arg name="resolution" value="0.35"/>
       </include>
   </group>
   <!-- Start Simulation -->
