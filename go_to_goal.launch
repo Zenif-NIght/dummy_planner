@@ -42,6 +42,8 @@
             <remap from="/cmd_vel" to="$(arg namespace)/cmd_vel" />
           </node>
       </group>
+      <!-- Run  rqt_reconfigure-->
+      <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
   </group>
 
 

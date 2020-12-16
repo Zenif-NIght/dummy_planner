@@ -8,6 +8,7 @@ project(dummy_planner)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  dynamic_reconfigure
   message_generation
   geometry_msgs
   nav_msgs
@@ -109,7 +110,9 @@ generate_messages(
 #   cfg/DynReconf1.cfg
 #   cfg/DynReconf2.cfg
 # )
-
+generate_dynamic_reconfigure_options(
+  cfg/LookAhead.cfg
+) 
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -124,6 +127,8 @@ catkin_package(
 #  LIBRARIES dummy_planner
 #  CATKIN_DEPENDS geometry_msgs, nav_msgs roscpp, roscpp, rospy, std_msgs, tf,
 #  DEPENDS system_lib
+  LIBRARIES dynamic_tutorials
+    CATKIN_DEPENDS dynamic_reconfigure roscpp rospy
 )
 
 ###########

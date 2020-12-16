@@ -16,6 +16,9 @@
 #include "control_type.hpp"
 #include <visualization_msgs/Marker.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <dummy_planner/LookAheadConfig.h>
+
 #include "AStarPlanner.hpp"
 
 #include <eigen3/Eigen/Dense>
@@ -30,6 +33,13 @@ ContinuousPlanner::ContinuousPlanner(const string & map_frame_id) :
     m_tf_listener(m_tf_buffer),
     m_last_map_size(0)
 {}
+double LOOKAHEAD = 0.0;
+int  plannning_parameter =0;
+void reconfigureCallback(dummy_planner::LookAheadConfig & config, uint32_t level){
+    ROS_INFO("Reconfigure Requested ");//%d", config.int_param, config.double_param, );
+    LOOKAHEAD = config.LookAhead;
+    plannning_parameter = config.plannning_parameter;
+}
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
     m_latest_odom = msg;    
@@ -90,6 +100,11 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
  // https://answers.ros.org/question/10268/where-am-i-in-the-map/?answer=15060#post-id-15060
     // grid_x = (unsigned int)((map_x - map.info.origin.position.x) / map.info.resolution)
     // grid_y = (unsigned int)((map_y - map.info.origin.position.y) / map.info.resolution)
+    geometry_msgs::PoseStamped odom_pose;
+    geometry_msgs::PoseStamped goal_pose;
+
+    // toMapFrame(m_latest_odom->pose.pose);
+    // toMapFrame(m_latest_goal);
 
     Vector2d cur((int)((m_latest_odom->pose.pose.position.x - info.origin.position.x)/info.resolution),
                  (int)((m_latest_odom->pose.pose.position.y - info.origin.position.x)/info.resolution) );
@@ -132,6 +147,26 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     timeToGetNewPlan = true;
     ROS_WARN_STREAM("GLOBAL_LOOKaHEAD: " << GLOBAL_path[GLOBAL_index](0)<<","<<GLOBAL_path[GLOBAL_index](1)); 
 
+}
+
+bool ContinuousPlanner::toMapFrame( geometry_msgs::PoseStamped &pose){
+   
+    // Transform the goal pose to the latest map frame
+    try {
+        // Transform the goal
+        pose = m_tf_buffer.transform<geometry_msgs::PoseStamped>(
+            pose, 
+            map_frame_id, 
+            ros::Duration(1.0)
+            );
+        // Indicate that the goal has been received
+        return true;
+    } catch (tf2::TransformException &ex) {
+        ROS_WARN_THROTTLE(1, "WARN  ContinuousPlanner::toMapFrame() Could not transform to map frame: %s", ex.what());
+        return false;
+    }
+
+    return false;
 }
 
 bool ContinuousPlanner::getLatestGoal(geometry_msgs::PoseStamped & pose) {
@@ -276,7 +311,13 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
         // //ROS_INFO("result position: "+result.pose.position);
     }
 
+<<<<<<< HEAD
     if (vector_field_enabled)
+=======
+    Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
+    //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
+    if( (LOOKaHEAD_pt - vec_start).norm() < 0.5)
+>>>>>>> 9d50e26bd3566493d9ecb017ef40155bc13a4713
     {
         // Vector Field 'Integration'
         // Get orientation angle, theta
@@ -376,6 +417,19 @@ int main(int argc, char** argv) {
     // Create the scenario object, initially a null object, until all is ready
     Scenario *scenario = nullptr;
 
+
+     // create dynamic_reconfigure Server
+    dynamic_reconfigure::Server<dummy_planner::LookAheadConfig> reconfig_server; 
+    dynamic_reconfigure::Server<dummy_planner::LookAheadConfig>::CallbackType f;
+    dummy_planner::LookAheadConfig default_config;
+    default_config.LookAhead = look_ahead_dub;
+    LOOKAHEAD = look_ahead_dub;
+    reconfig_server.setConfigDefault(default_config);
+
+    f = boost::bind(&reconfigureCallback, _1, _2);
+    reconfig_server.setCallback(f);
+
+
     // Run the program at 10 hz
     ros::Rate rate(10);
     while(ros::ok()) {
@@ -420,7 +474,7 @@ int main(int argc, char** argv) {
             // get the look ahead point 
             calculateLookAheadPoint(srv.request.start,
                                 srv.request.goal,
-                                look_ahead_dub,
+                                LOOKAHEAD,//look_ahead_dub,
                                 scan,
                                 scenario, 
                                 planner.AStarEnabled(),

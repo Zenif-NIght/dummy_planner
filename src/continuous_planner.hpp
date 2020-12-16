@@ -92,6 +92,10 @@ public:
     //  */
     // geometry_msgs::PoseStamped Vector2d2Pose(const Eigen::Vector2d & vec, const geometry_msgs::PoseStamped &ptemplate);
 private:
+
+
+    bool toMapFrame( geometry_msgs::PoseStamped &pose);
+    
     /*!
      * \brief m_do_vector_field flag to enable vector field control
      */
