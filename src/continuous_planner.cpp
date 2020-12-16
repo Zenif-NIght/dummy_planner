@@ -118,6 +118,9 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     // vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> path = aStar_planner.run_astar();
     GLOBAL_path = AStarPlanner::LocList();
+    aStar_planner.set_open_flag(true);
+    aStar_planner.set_loop_flag(true);
+    aStar_planner.set_path_flag(true);
     GLOBAL_path = aStar_planner.run_astar();
 
     aStar_planner.convertFrame(GLOBAL_path,
@@ -290,16 +293,15 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     // ROS_INFO("result1 position: %f %f %f",result1.pose.position.x, result1.pose.position.y, result1.pose.position.z);
     // ROS_INFO("result position: %f %f %f",result.pose.position.x, result.pose.position.y, result.pose.position.z);
     // //ROS_INFO("result position: "+result.pose.position);
-
-    // integrateEuler
+    return;
+    
+    // Vector Field 'Integration'
     // Get orientation angle, theta
     double theta = tf::getYaw(pnt1.pose.orientation);
-    // ROS_INFO_STREAM(" theta = " << theta);
-    // ROS_INFO_STREAM("start position " << pnt1.pose.position);
-    return;
     // Put current orientation into vehicle state
     ROS_INFO("loop: Insert current orientation");
     scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
+    // Read latest scan data into model
     ROS_INFO("loop: detect obstacles");
     scenario->getObstacleDetections(scan);
     
@@ -307,16 +309,19 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     // TODO: time
     int t=0;
     ROS_INFO("loop: get control inputs");
-    Vector2d u = scenario->control(t,scenario->x_state());
+    vector<double> x_state = scenario->x_state();
+    Vector2d u = scenario->control(t,x_state);
     ROS_INFO_STREAM("loop: control u = "<<u);
 
     // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
-    // VehicleKinematics need to find xdot 
-    //(TOTO ADD DIFF_DRIVE kinematics)
-    //(TODO ADD DIFF_DRIVE vehicle)
+    // Vector2d xdot = scenario->Kinematics(t,x_state, u); 
 
     // % Update the state
     // obj.vehicle.x = obj.vehicle.x + obj.dt * xdot;
+    // vector<double> new_x = x_state + dt * xdot;
+    // scenario->update_state(new_x);
+    
+    // Set look-ahead based on new state.
 }
 
 
