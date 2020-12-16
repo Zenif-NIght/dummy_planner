@@ -16,6 +16,9 @@
 #include "control_type.hpp"
 #include <visualization_msgs/Marker.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <dummy_planner/LookAheadConfig.h>
+
 #include "AStarPlanner.hpp"
 
 #include <eigen3/Eigen/Dense>
@@ -30,6 +33,13 @@ ContinuousPlanner::ContinuousPlanner(const string & map_frame_id) :
     m_tf_listener(m_tf_buffer),
     m_last_map_size(0)
 {}
+double LOOKAHEAD = 0.0;
+int  plannning_parameter =0;
+void reconfigureCallback(dummy_planner::LookAheadConfig & config, uint32_t level){
+    ROS_INFO("Reconfigure Requested ");//%d", config.int_param, config.double_param, );
+    LOOKAHEAD = config.LookAhead;
+    plannning_parameter = config.plannning_parameter;
+}
 
 void ContinuousPlanner::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
     m_latest_odom = msg;    
@@ -93,15 +103,15 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     geometry_msgs::PoseStamped odom_pose;
     geometry_msgs::PoseStamped goal_pose;
 
-    toMapFrame(m_latest_odom->pose.pose);
-    toMapFrame(m_latest_goal);
+    // toMapFrame(m_latest_odom->pose.pose);
+    // toMapFrame(m_latest_goal);
 
-    Vector2d cur((int)((odom_pose->pose.pose.position.x - info.origin.position.x)/info.resolution),
-                 (int)((odom_pose->pose.pose.position.y - info.origin.position.x)/info.resolution) );
+    Vector2d cur((int)((m_latest_odom->pose.pose.position.x - info.origin.position.x)/info.resolution),
+                 (int)((m_latest_odom->pose.pose.position.y - info.origin.position.x)/info.resolution) );
     
 
-    Vector2d goal((int)((goal_pose->pose.position.x - info.origin.position.x)/info.resolution),
-                  (int)((goal_pose->pose.position.y - info.origin.position.x)/info.resolution));
+    Vector2d goal((int)((m_latest_goal->pose.position.x - info.origin.position.x)/info.resolution),
+                  (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
 
     ROS_WARN_STREAM("cur: ("<<m_latest_odom->pose.pose.position.x<<","<<m_latest_odom->pose.pose.position.y<<")");
     ROS_WARN_STREAM("goal: ("<<m_latest_goal->pose.position.x<<","<<m_latest_goal->pose.position.y<<")");
@@ -390,6 +400,19 @@ int main(int argc, char** argv) {
     // Create the scenario object, initially a null object, until all is ready
     Scenario *scenario = nullptr;
 
+
+     // create dynamic_reconfigure Server
+    dynamic_reconfigure::Server<dummy_planner::LookAheadConfig> reconfig_server; 
+    dynamic_reconfigure::Server<dummy_planner::LookAheadConfig>::CallbackType f;
+    dummy_planner::LookAheadConfig default_config;
+    default_config.LookAhead = look_ahead_dub;
+    LOOKAHEAD = look_ahead_dub;
+    reconfig_server.setConfigDefault(default_config);
+
+    f = boost::bind(&reconfigureCallback, _1, _2);
+    reconfig_server.setCallback(f);
+
+
     // Run the program at 10 hz
     ros::Rate rate(10);
     while(ros::ok()) {
@@ -437,7 +460,7 @@ int main(int argc, char** argv) {
             // get the look ahead point 
             calculateLookAheadPoint(srv.request.start,
                                 srv.request.goal,
-                                look_ahead_dub,
+                                LOOKAHEAD,//look_ahead_dub,
                                 scan,
                                 scenario, 
                                 look_ahead_point);
