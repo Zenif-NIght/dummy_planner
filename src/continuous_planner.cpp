@@ -81,7 +81,6 @@ void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg
 void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr& msg) { //OccupancyGrid::ConstPtr
     // if(!msg || m_latest_odom != msg)return;
     // if no odom or goal, exit - wait until they are available
-    if (!m_latest_odom || !m_latest_goal) return;
 
     // ROS_INFO("@@@@@ occCallback @@@@");
 
@@ -110,12 +109,9 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // given latest Goal
 
 
-    if( cur_map_size <= m_last_map_size )
-    {
-        // ROS_INFO("..... occCallback exit - mapsize has not changed");
-        return; //no need to update Plan
-    }
+    if( (cur_map_size <= m_last_map_size) && (m_last_planned_goal == m_latest_goal) ) return;
 
+    m_last_planned_goal = m_latest_goal;
     m_last_map_size = cur_map_size;
     ROS_INFO_STREAM("ccupancyCallback map_size: "<< m_last_map_size);                                         
 
@@ -150,13 +146,10 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // Vector2d goal((int)((m_latest_goal->pose.position.x - info.origin.position.x)/info.resolution),
     //               (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
 
-    ROS_WARN_STREAM("cur: ("<<m_latest_odom->pose.pose.position.x<<","<<m_latest_odom->pose.pose.position.y<<")");
-    ROS_WARN_STREAM("goal: ("<<m_latest_goal->pose.position.x<<","<<m_latest_goal->pose.position.y<<")");
-    ROS_WARN_STREAM("cur: ("<<odom_pose.pose.position.x<<","<<odom_pose.pose.position.y<<")");
-    ROS_WARN_STREAM("goal: ("<<goal_pose.pose.position.x<<","<<goal_pose.pose.position.y<<")");
-    
-    ROS_WARN_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
-    ROS_WARN_STREAM("goal: ("<<goal(0)<<","<<goal(1)<<")");
+    // ROS_WARN_STREAM("cur: ("<<m_latest_odom->pose.pose.position.x<<","<<m_latest_odom->pose.pose.position.y<<")");
+    // ROS_WARN_STREAM("goal: ("<<m_latest_goal->pose.position.x<<","<<m_latest_goal->pose.position.y<<")");
+    ROS_WARN_STREAM("\"map\" frame cur: ("<<cur(0)<<","<<cur(1)<<")");
+    ROS_WARN_STREAM("\"map\" frame goal: ("<<goal(0)<<","<<goal(1)<<")");
 
     if (cur == goal ) 
     {
@@ -175,34 +168,39 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
                                igoal);
 
     // vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> path = aStar_planner.run_astar();
-    GLOBAL_path = LocListd();
+    GLOBAL_path = ContinuousPlanner::LocListd();
     aStar_planner.set_open_flag(true);
     aStar_planner.set_loop_flag(true);
     aStar_planner.set_path_flag(true);
-    aStar_planner.set_max_depth(700);
-
+    aStar_planner.set_max_depth(msg->info.width*msg->info.height);
+    
     convertFrame(GLOBAL_path, aStar_planner.run_astar(),
                  origin,
                  info.resolution);
-    // //TODO --> UPDATE LOOK AHEAD POINT 
-    // for (int i = 0; i < 10; i++)
-    // {
-    //     GLOBAL_path.push_back(Vector2d(cur(0)+i,cur(1)+i));
-    //     /* code */
-    // }
-    ROS_WARN_STREAM("GLOBAL_path: update");
-    GLOBAL_index = 1;
+    if((int)GLOBAL_path.size() >=1){
+        GLOBAL_index = 1;
+    }
+    else{
+        GLOBAL_index = 0;
+    }
     ROS_WARN("--- occCallback exit - GLOBAL_LOOKaHEAD path size: %d, index: %d",(int)GLOBAL_path.size(),GLOBAL_index); 
-
+    m_latest_odom = nav_msgs::Odometry::ConstPtr();
+    m_latest_goal = geometry_msgs::PoseStamped::ConstPtr();
 }
 
 void ContinuousPlanner::convertFrame(LocListd&newpath, const AStarPlanner::LocList &path, Vector2d mapPos, double resolution){
-    // ROS_INFO_STREAM("\n\npath convetion path.size():"<<path.size()); 
+    ROS_INFO_STREAM("aStar_planner.run_astar==> convetion path.size():"<<path.size()); 
+    // geometry_msgs::PoseStamped point;
+    // point.header.stamp = m_latest_goal->header.stamp;
+    // point.header.frame_id = m_latest_goal->header.frame_id;
+    // point.pose = m_latest_goal->pose;
+
     for (int i = 0; i < path.size(); i++)
     {
         ROS_INFO_STREAM("PRE path["<<i<<"] " << path[i](0)<<","<<path[i](1));
 
         Vector2d pathd((double)path[i](0),(double)path[i](1));
+        // toMapFrame(geometry_msgs::PoseStamped())
         newpath.push_back( pathd*resolution + mapPos );
 
         ROS_INFO_STREAM("POST path["<<i<<"] " << newpath[i](0)<<","<<newpath[i](1));
@@ -346,7 +344,7 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
     {
         // ROS_INFO("AStar enabled");
         //TESTING TODO FIX THIS
-        if(GLOBAL_index >= GLOBAL_path.size())
+        if(GLOBAL_index >= (int)GLOBAL_path.size())
         {
             result = Vector2d2Pose(res,pnt1);
             // int end = GLOBAL_path.size()-1;
@@ -360,19 +358,19 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
             return;
         }
 
-        Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
+        Vector2d next_pt =GLOBAL_path[GLOBAL_index]; ;
         //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
-        if( (LOOKaHEAD_pt - vec_start).norm() < 0.25)
+        if( (next_pt - vec_start).norm() < look_ahead)
         {
             GLOBAL_index ++;
-            LOOKaHEAD_pt = GLOBAL_path[GLOBAL_index];
-            ROS_WARN_STREAM("NEW LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"#################");
+            next_pt = GLOBAL_path[GLOBAL_index];
+            ROS_WARN_STREAM("NEW next_pt " << next_pt(0)<<","<<next_pt(1)<<"#################");
 
         }
 
-        // ROS_INFO_STREAM("SET LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"###");
+        // ROS_INFO_STREAM("SET next_pt " << next_pt(0)<<","<<next_pt(1)<<"###");
 
-        res = LOOKaHEAD_pt;
+        res = next_pt;
         result = Vector2d2Pose(res,pnt1);
         // ROS_INFO("result1 position: %f %f %f",result1.pose.position.x, result1.pose.position.y, result1.pose.position.z);
         // ROS_INFO("result position: %f %f %f",result.pose.position.x, result.pose.position.y, result.pose.position.z);
@@ -546,7 +544,9 @@ int main(int argc, char** argv) {
 
             visualization_msgs::Marker line_strip;
 
-            if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG)
+            if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG 
+                || GLOBLE_PLANNING_PARAMETER == DIJKSTRA_CONFIG
+                || BEST_FIRST_CONFIG == GLOBLE_PLANNING_PARAMETER)
             {
                 line_strip.header.frame_id =srv.request.start.header.frame_id;
                 line_strip.header.stamp = srv.request.start.header.stamp;
@@ -557,7 +557,12 @@ int main(int argc, char** argv) {
                 line_strip.type = visualization_msgs::Marker::LINE_STRIP;
                 line_strip.scale.x = 0.1;
                 // Line strip is blue
-                line_strip.color.b = 1.0;
+                if(A_STAR_CONFIG == GLOBLE_PLANNING_PARAMETER)
+                    line_strip.color.b = 1.0;
+                if(DIJKSTRA_CONFIG == GLOBLE_PLANNING_PARAMETER)
+                    line_strip.color.g = 1.0;
+                if(BEST_FIRST_CONFIG == GLOBLE_PLANNING_PARAMETER)
+                    line_strip.color.r = 1.0;
                 line_strip.color.a = 1.0;
                 line_strip.scale.x = 0.1;
 

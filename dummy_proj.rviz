@@ -5,11 +5,13 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Grid1
         - /Odometry1/Shape1
         - /Path1
         - /Pose1
         - /MarkerArray1
         - /Map1
+        - /Map1/Orientation1
         - /Marker1
       Splitter Ratio: 0.6029411554336548
     Tree Height: 978
@@ -220,11 +222,11 @@ Visualization Manager:
       Unreliable: false
       Value: false
       Visibility:
-        "": true
         Axes: true
         Grid: true
         LaserScan: true
         Map: true
+        Marker: true
         MarkerArray: true
         Odometry: true
         Path: true
@@ -325,25 +327,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 12.23012924194336
+      Distance: 12.754938125610352
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 3.7965073585510254
-        Y: -5.2243332862854
-        Z: 3.675944753922522e-6
+        X: 3.795518398284912
+        Y: -3.216404914855957
+        Z: 3.2587122404947877e-6
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6303982138633728
+      Pitch: 0.9697960615158081
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 5.643582344055176
+      Yaw: 5.6885881423950195
     Saved: ~
 Window Geometry:
   Camera:
