@@ -116,6 +116,13 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
         return; //no need to update Plan
     }
 
+    geometry_msgs::PoseStamped odom_pose;
+    geometry_msgs::PoseStamped goal_pose;
+
+    if ( !ContinuousPlanner::getLatestGoal(m_latest_goal) 
+         && !ContinuousPlanner::getLatestPose(odom_pose))
+        return; //no need to update Plan COULD NOT GET TF STUFF
+
     m_last_map_size = cur_map_size;
     ROS_INFO_STREAM("ccupancyCallback map_size: "<< m_last_map_size);                                         
 
@@ -127,6 +134,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
  // https://answers.ros.org/question/10268/where-am-i-in-the-map/?answer=15060#post-id-15060
     // grid_x = (unsigned int)((map_x - map.info.origin.position.x) / map.info.resolution)
     // grid_y = (unsigned int)((map_y - map.info.origin.position.y) / map.info.resolution)
+<<<<<<< HEAD
     geometry_msgs::PoseStamped odom_pose;
     if (!getLatestPose(odom_pose)) return; // return if transform failure
     geometry_msgs::PoseStamped goal_pose;
@@ -134,6 +142,8 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     // toMapFrame(m_latest_odom->pose.pose);
     // toMapFrame(m_latest_goal);
+=======
+>>>>>>> 0a7d05cd0b55e0114122556d61ec219b038ff639
 
     Vector2d cur = Pose2Vector2d(odom_pose);
     Vector2d goal = Pose2Vector2d(goal_pose);
