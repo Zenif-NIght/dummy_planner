@@ -58,6 +58,7 @@ public:
     
     LocList run_astar();
     NodeList::iterator find( NodeList&, M_Node&);
+    int next_to_wall(M_Node&);
     void set_open_flag(bool f) { open_flag = f; }
     void set_loop_flag(bool f) { loop_flag = f; }
     void set_path_flag(bool f) { path_flag = f; }
@@ -99,6 +100,12 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
 
     NodeList open_list;
     NodeList closed_list;
+
+    // cost constants
+    double move_cost = 1; // cost of new neighbor;
+    double diag_cost = 1.414; // cost of moving diagonally
+    double wall_cost = 2; // cost of being next to a wall
+    double h_eps = 0.001; // h-cost tie breaker
 
     // # Add the start node
     open_list.push_back(start_node);
@@ -221,8 +228,21 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
             if( find(closed_list,neighbor) != closed_list.end()) continue;
 
             // # Create the f, g, and h values
-            neighbor.set_g( g_cost ? current_node.g()+1 : 0);
-            neighbor.set_h( h_cost ? (neighbor.position() - end_node.position()).squaredNorm() : 0);
+            if(g_cost) {
+                // if neighbor is diagonal, add a cost.
+                double new_g = current_node.g() + move_cost;
+                if ((neighbor.position() - current_node.position()).squaredNorm() > 1) new_g += diag_cost;
+                new_g += next_to_wall(neighbor) * wall_cost; 
+                neighbor.set_g( new_g );
+            }
+            
+            if(h_cost) {
+                // manhattan
+                double new_h = abs(neighbor.position()(0) - end_node.position()(0)) +
+                               abs(neighbor.position()(1) - end_node.position()(1));
+                new_h *= 0.001;
+                neighbor.set_h( new_h );
+            }
             neighbor.set_f( neighbor.g() + neighbor.h() );
 
             // Check if child is in open_list
@@ -271,4 +291,15 @@ void AStarPlanner::dump_list(const char* msg, AStarPlanner::NodeList &nl)
     {
         ROS_INFO_STREAM("   item: ("<<it->position()(0)<<","<<it->position()(1)<<")");
     }
+}
+
+int AStarPlanner::next_to_wall(M_Node&node)
+{
+    int cnt = 0;
+    for( Vector2i new_position : LocList{Vector2i(0,-1),Vector2i(0,1),Vector2i(-1,0),Vector2i(1,0)})
+    {
+        new_position = new_position + node.position();
+        if (m_maze(new_position(0),new_position(1)) != 0) cnt++;
+    }
+    return cnt;
 }
