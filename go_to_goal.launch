@@ -13,11 +13,6 @@
   <arg name="dynamics_model" default="unicycle_dynamics"/> <!-- options: "unicycle_dynamics" - use a unicycle model, "jerk_unicycle_dynamics" - use a jerk model -->
   <arg name="goal_topic" default="/move_base_simple/goal" />
 
-  <group if="$(arg run_occupancy_grid)">
-      <include file="$(find occupancy_grid)/launch/occupancy_grid.launch">
-        <arg name="resolution" value="0.35"/>
-      </include>
-  </group>
   <!-- Start Simulation -->
   <group if="$(arg run_sim)">
       <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg spawn_gazebo)">
@@ -44,6 +39,12 @@
       </group>
       <!-- Run  rqt_reconfigure-->
       <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
+
+      <group if="$(arg run_occupancy_grid)">
+          <include file="$(find occupancy_grid)/launch/occupancy_grid.launch">
+            <arg name="resolution" value="0.45"/>
+          </include>
+      </group>
   </group>
 
 
@@ -71,9 +72,9 @@
 
     <!-- Run the goal to goal control -->
     <node pkg="controllers" type="simple_go_to_goal" name="go_to_goal" output="screen" unless="$(arg run_joystick)">
-        <param name="nominal_velocity" value="0.5" />
+        <param name="nominal_velocity" value="0.75" />
         <param name="trans_vel_gain" value="0.5" />
-        <param name="rot_vel_gain" value="1.0" />
+        <param name="rot_vel_gain" value="0.5" />
 
         <remap from="/cmd_vel" to="$(arg namespace)/cmd_vel" />
         <!-- <remap from="goal" to="$(arg goal_topic)" /> -->

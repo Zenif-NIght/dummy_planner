@@ -98,7 +98,6 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     NodeList open_list;
     NodeList closed_list;
 
-search_depth = 10;
     // # Add the start node
     open_list.push_back(start_node);
     // NodeList::iterator it1 = find(open_list,start_node);

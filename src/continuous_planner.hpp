@@ -124,6 +124,11 @@ private:
      * \brief m_latest_goal is the latest goal to plan to, stored in the correct frame
      */
     geometry_msgs::PoseStamped::ConstPtr m_latest_goal;
+    
+    /*!
+     * \brief m_last_planned_goal is the latest goal to plan to, stored in the correct frame
+     */
+    geometry_msgs::PoseStamped::ConstPtr m_last_planned_goal;
 
     /*!
      * \brief m_latest_scan stores the scan data
