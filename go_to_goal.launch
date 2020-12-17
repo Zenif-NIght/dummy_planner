@@ -74,7 +74,7 @@
     <node pkg="controllers" type="simple_go_to_goal" name="go_to_goal" output="screen" unless="$(arg run_joystick)">
         <param name="nominal_velocity" value="0.75" />
         <param name="trans_vel_gain" value="0.5" />
-        <param name="rot_vel_gain" value="0.5" />
+        <param name="rot_vel_gain" value="2" />
 
         <remap from="/cmd_vel" to="$(arg namespace)/cmd_vel" />
         <!-- <remap from="goal" to="$(arg goal_topic)" /> -->

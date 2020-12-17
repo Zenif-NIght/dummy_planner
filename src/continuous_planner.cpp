@@ -360,19 +360,19 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
             return;
         }
 
-        Vector2d LOOKaHEAD_pt =GLOBAL_path[GLOBAL_index]; ;
+        Vector2d next_pt =GLOBAL_path[GLOBAL_index]; ;
         //TODO if  GLOBAL_LOOKaHEAD is close to vec_start get next goal Point from path
-        if( (LOOKaHEAD_pt - vec_start).norm() < 0.25)
+        if( (next_pt - vec_start).norm() < look_ahead)
         {
             GLOBAL_index ++;
-            LOOKaHEAD_pt = GLOBAL_path[GLOBAL_index];
-            ROS_WARN_STREAM("NEW LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"#################");
+            next_pt = GLOBAL_path[GLOBAL_index];
+            ROS_WARN_STREAM("NEW next_pt " << next_pt(0)<<","<<next_pt(1)<<"#################");
 
         }
 
-        // ROS_INFO_STREAM("SET LOOKaHEAD_pt " << LOOKaHEAD_pt(0)<<","<<LOOKaHEAD_pt(1)<<"###");
+        // ROS_INFO_STREAM("SET next_pt " << next_pt(0)<<","<<next_pt(1)<<"###");
 
-        res = LOOKaHEAD_pt;
+        res = next_pt;
         result = Vector2d2Pose(res,pnt1);
         // ROS_INFO("result1 position: %f %f %f",result1.pose.position.x, result1.pose.position.y, result1.pose.position.z);
         // ROS_INFO("result position: %f %f %f",result.pose.position.x, result.pose.position.y, result.pose.position.z);
@@ -546,7 +546,9 @@ int main(int argc, char** argv) {
 
             visualization_msgs::Marker line_strip;
 
-            if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG)
+            if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG 
+                || GLOBLE_PLANNING_PARAMETER == DIJKSTRA_CONFIG
+                || BEST_FIRST_CONFIG == GLOBLE_PLANNING_PARAMETER)
             {
                 line_strip.header.frame_id =srv.request.start.header.frame_id;
                 line_strip.header.stamp = srv.request.start.header.stamp;
@@ -557,7 +559,12 @@ int main(int argc, char** argv) {
                 line_strip.type = visualization_msgs::Marker::LINE_STRIP;
                 line_strip.scale.x = 0.1;
                 // Line strip is blue
-                line_strip.color.b = 1.0;
+                if(A_STAR_CONFIG == GLOBLE_PLANNING_PARAMETER)
+                    line_strip.color.b = 1.0;
+                if(DIJKSTRA_CONFIG == GLOBLE_PLANNING_PARAMETER)
+                    line_strip.color.g = 1.0;
+                if(BEST_FIRST_CONFIG == GLOBLE_PLANNING_PARAMETER)
+                    line_strip.color.r = 1.0;
                 line_strip.color.a = 1.0;
                 line_strip.scale.x = 0.1;
 
