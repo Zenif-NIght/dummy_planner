@@ -21,7 +21,7 @@ private:
     public:
         int parent(){return m_parent;};
         bool has_parent() { return m_parent >= 0; }
-        const Vector2i position(){return m_position;};
+        Vector2i position(){return m_position;};
         const int g(){return m_g;};
         const double h(){return m_h;};
         const double f(){return m_f;};
@@ -59,7 +59,9 @@ public:
     
     LocList run_astar();
     NodeList::iterator find( NodeList&, M_Node&);
-    int next_to_wall(M_Node&);
+    bool isWall(Vector2i& position);
+    int next_to_wall(Vector2i position);
+    bool valid_position(Vector2i & node_position);
     void set_open_flag(bool f) { open_flag = f; }
     void set_loop_flag(bool f) { loop_flag = f; }
     void set_path_flag(bool f) { path_flag = f; }
@@ -105,7 +107,7 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     // cost constants
     double move_cost = 1; // cost of new neighbor;
     double diag_cost = 1.414; // cost of moving diagonally
-    double wall_cost = 2; // cost of being next to a wall
+    double wall_cost = 3; // cost of being next to a wall
     double h_eps = 0.001; // h-cost tie breaker
 
     // # Add the start node
@@ -215,12 +217,10 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
             Vector2i node_position = (current_node.position() + new_position);
 
             // # Make sure within maze
-            if (node_position(0) > (m_maze.rows()-1) || node_position(0) < 0 || node_position(1) > (m_maze.cols() -1) || node_position(1) < 0)
-                continue;
+            if (!valid_position(node_position)) continue;
 
-            // # Make sure walkable terrain - can't use neighbor that are obstacles
-            if (m_maze(node_position(0),node_position(1)) != 0)
-                continue;
+            // # Make sure walkable terrain - can't use neighbors that are obstacles
+            if (isWall(node_position)) continue;
 
             // # Create new node
             M_Node neighbor = M_Node(node_position,current_node.id());
@@ -233,7 +233,7 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
                 // if neighbor is diagonal, add a cost.
                 double new_g = current_node.g() + move_cost;
                 if ((neighbor.position() - current_node.position()).squaredNorm() > 1) new_g += diag_cost;
-                new_g += next_to_wall(neighbor) * wall_cost; 
+                new_g += next_to_wall(neighbor.position()) * wall_cost; 
                 neighbor.set_g( new_g );
             }
             
@@ -242,14 +242,14 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
                 double dx = abs(neighbor.position()(0) - end_node.position()(0) );
                 double dy = abs(neighbor.position()(1) - end_node.position()(1) );
                 
-                double new_h = move_cost * (dx +dy) + (diag_cost - 2 * move_cost) * min(dx,dy);
-            
+                double new_h = move_cost * (dx +dy);
+                // new_h +=  (diag_cost - 2 * move_cost) * min(dx,dy);
+                new_h +=  diag_cost * sqrt(dx*dx + dy*dy);
+
                 new_h *= 0.001;
                 neighbor.set_h( new_h );
             }
-            // octile distance
-            double D1 =1;
-            double D2 = 1.41421356237; //sqrt(2);
+            
             // # Create the f, g, and h values bassed on the use flags
             
             // http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#diagonal-distance
@@ -304,13 +304,26 @@ void AStarPlanner::dump_list(const char* msg, AStarPlanner::NodeList &nl)
     }
 }
 
-int AStarPlanner::next_to_wall(M_Node&node)
+bool AStarPlanner::isWall(Vector2i& node_position)
+{
+    return m_maze(node_position(0),node_position(1)) != 0;
+}
+
+int AStarPlanner::next_to_wall(Vector2i position)
 {
     int cnt = 0;
     for( Vector2i new_position : LocList{Vector2i(0,-1),Vector2i(0,1),Vector2i(-1,0),Vector2i(1,0)})
     {
-        new_position = new_position + node.position();
-        if (m_maze(new_position(0),new_position(1)) != 0) cnt++;
+        new_position = new_position + position;
+        if (!valid_position(new_position)) continue;
+        if (isWall(new_position)) cnt++;
     }
     return cnt;
+}
+
+bool AStarPlanner::valid_position(Vector2i & node_position)
+{
+    if (node_position(0) > (m_maze.rows()-1) || node_position(0) < 0 || node_position(1) > (m_maze.cols() -1) || node_position(1) < 0)
+        return false;
+    return true;
 }
