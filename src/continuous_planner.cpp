@@ -116,13 +116,6 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
         return; //no need to update Plan
     }
 
-    geometry_msgs::PoseStamped odom_pose;
-    geometry_msgs::PoseStamped goal_pose;
-
-    if ( !ContinuousPlanner::getLatestGoal(m_latest_goal) 
-         && !ContinuousPlanner::getLatestPose(odom_pose))
-        return; //no need to update Plan COULD NOT GET TF STUFF
-
     m_last_map_size = cur_map_size;
     ROS_INFO_STREAM("ccupancyCallback map_size: "<< m_last_map_size);                                         
 
@@ -134,7 +127,6 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
  // https://answers.ros.org/question/10268/where-am-i-in-the-map/?answer=15060#post-id-15060
     // grid_x = (unsigned int)((map_x - map.info.origin.position.x) / map.info.resolution)
     // grid_y = (unsigned int)((map_y - map.info.origin.position.y) / map.info.resolution)
-<<<<<<< HEAD
     geometry_msgs::PoseStamped odom_pose;
     if (!getLatestPose(odom_pose)) return; // return if transform failure
     geometry_msgs::PoseStamped goal_pose;
@@ -142,8 +134,6 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     // toMapFrame(m_latest_odom->pose.pose);
     // toMapFrame(m_latest_goal);
-=======
->>>>>>> 0a7d05cd0b55e0114122556d61ec219b038ff639
 
     Vector2d cur = Pose2Vector2d(odom_pose);
     Vector2d goal = Pose2Vector2d(goal_pose);
@@ -329,7 +319,7 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
     Vector2d vec_start = Pose2Vector2d(pnt1), 
              vec_goal = Pose2Vector2d(pnt2);
     
-    ROS_INFO("############# calc LookAhead, Current:(%f,%f) Goal:(%f,%f) ###",vec_start(0),vec_start(1),vec_goal(0),vec_goal(1));
+    // ROS_INFO("############# calc LookAhead, Current:(%f,%f) Goal:(%f,%f) ###",vec_start(0),vec_start(1),vec_goal(0),vec_goal(1));
     
     // Calculate the distance between points
     Vector2d diff = vec_goal - vec_start;
@@ -338,7 +328,7 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
     // If distance is less than the look_ahead then we only care about point 2
     if (dist < look_ahead) {
         result = pnt2;
-        ROS_INFO(".......... calc LookAhead exit - within goal; dist: %f, look_ahead limit: %f .....",dist,look_ahead);
+        // ROS_INFO(".......... calc LookAhead exit - within goal; dist: %f, look_ahead limit: %f .....",dist,look_ahead);
         return;
     }
 
@@ -417,8 +407,8 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
         // Set look-ahead based on new state.
 
     }
-    ROS_INFO("exit main");
-    ROS_INFO("....... calcLookAhead exit - normal, next step: (%f,%f)",res(0),res(1));
+    // ROS_INFO("exit main");
+    // ROS_INFO("....... calcLookAhead exit - normal, next step: (%f,%f)",res(0),res(1));
     return;
 }
 
