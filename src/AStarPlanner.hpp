@@ -1,5 +1,6 @@
 #include <eigen3/Eigen/Dense>
 #include "ros/ros.h"
+#include <algorithm>
 
 using namespace Eigen;
 using namespace std;
@@ -220,18 +221,27 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
             // if already seen (closed_list), skip
             if( find(closed_list,neighbor) != closed_list.end()) continue;
 
-            // # Create the f, g, and h values
-            neighbor.set_g( g_cost ? current_node.g()+1 : 0);
-            neighbor.set_h( h_cost ? (neighbor.position() - end_node.position()).squaredNorm() : 0);
+            // octile distance
+            double D1 =1;
+            double D2 = 1.41421356237; //sqrt(2);
+            // # Create the f, g, and h values bassed on the use flags
+            neighbor.set_g( g_cost ? current_node.g() + D1 : 0);
+
+            // http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#diagonal-distance
+            double dx = abs(neighbor.position()(0) - end_node.position()(0) );
+            double dy = abs(neighbor.position()(1) - end_node.position()(1) );
+            neighbor.set_h( h_cost ? (
+                D1 * (dx +dy) + (D2 - 2 * D1) * min(dx,dy) )  : 0);
+            
             neighbor.set_f( neighbor.g() + neighbor.h() );
 
             // Check if child is in open_list
             // if so, skip, unless g-cost is smaller
             it = find(open_list,neighbor);
             if (it != open_list.end()) {
-                if (neighbor.g() > it->g()) continue;
+                if (neighbor.g() >= it->g()) continue;
                 ROS_INFO("Adding (%d,%d) to open_list, even though it's already there",neighbor.position()(0),neighbor.position()(1));
-                ROS_INFO("   because new one has better f-cost:%d vs old-cost:%d",neighbor.g(),it->g());
+                ROS_INFO("   because new one has better g-cost:%d vs old-cost:%d",neighbor.g(),it->g());
             }
 
             // Add to open list
