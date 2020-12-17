@@ -83,7 +83,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // if no odom or goal, exit - wait until they are available
     if (!m_latest_odom || !m_latest_goal) return;
 
-    ROS_INFO("@@@@@ occCallback @@@@");
+    // ROS_INFO("@@@@@ occCallback @@@@");
 
     std_msgs::Header header = msg->header;
     nav_msgs::MapMetaData info = msg->info;
@@ -112,7 +112,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     if( cur_map_size <= m_last_map_size )
     {
-        ROS_INFO("..... occCallback exit - mapsize has not changed");
+        // ROS_INFO("..... occCallback exit - mapsize has not changed");
         return; //no need to update Plan
     }
 
@@ -138,8 +138,8 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     Vector2d cur = Pose2Vector2d(odom_pose);
     Vector2d goal = Pose2Vector2d(goal_pose);
     Vector2d origin(info.origin.position.x,info.origin.position.y);
-    cur -= origin / info.resolution;
-    goal -= origin / info.resolution;
+    cur = ( cur - origin ) / info.resolution;
+    goal = ( goal - origin ) / info.resolution;
     // Vector2d cur(odom_pose.pose.position.x,odom_pose.pose.position.y);
     // Vector2d goal(goal_pose.pose.position.x,goal_pose.pose.position.y);
 
@@ -152,12 +152,15 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     ROS_WARN_STREAM("cur: ("<<m_latest_odom->pose.pose.position.x<<","<<m_latest_odom->pose.pose.position.y<<")");
     ROS_WARN_STREAM("goal: ("<<m_latest_goal->pose.position.x<<","<<m_latest_goal->pose.position.y<<")");
+    ROS_WARN_STREAM("cur: ("<<odom_pose.pose.position.x<<","<<odom_pose.pose.position.y<<")");
+    ROS_WARN_STREAM("goal: ("<<goal_pose.pose.position.x<<","<<goal_pose.pose.position.y<<")");
+    
     ROS_WARN_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
     ROS_WARN_STREAM("goal: ("<<goal(0)<<","<<goal(1)<<")");
 
     if (cur == goal ) 
     {
-        ROS_WARN("---- occCallback exit - Goal reached! (%f,%f)",goal(0),goal(1));
+        // ROS_WARN("---- occCallback exit - Goal reached! (%f,%f)",goal(0),goal(1));
         return;
     } 
 
@@ -341,19 +344,19 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
     
     if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG)
     {
-        ROS_INFO("AStar enabled");
+        // ROS_INFO("AStar enabled");
         //TESTING TODO FIX THIS
         if(GLOBAL_index >= GLOBAL_path.size())
         {
             result = Vector2d2Pose(res,pnt1);
-            int end = GLOBAL_path.size()-1;
-            ROS_WARN("...... calc LookAhead exit - end of A* path reached. At goal? ");
-            ROS_WARN("  Current: [%f,%f];  ",vec_start[0],vec_start[1]);
-            ROS_WARN("  GLOBAL_index: %d  GLOBAL_path size: %d",GLOBAL_index,(int)GLOBAL_path.size());
-            if(GLOBAL_path.size() > 0) {
-                ROS_WARN("  A* Begin: (%f,%f)  ",GLOBAL_path[0](0),GLOBAL_path[0](1));
-                ROS_WARN("  Goal: (%f,%f)",GLOBAL_path[end](0),GLOBAL_path[end](1));
-            }
+            // int end = GLOBAL_path.size()-1;
+            // ROS_WARN("...... calc LookAhead exit - end of A* path reached. At goal? ");
+            // ROS_WARN("  Current: [%f,%f];  ",vec_start[0],vec_start[1]);
+            // ROS_WARN("  GLOBAL_index: %d  GLOBAL_path size: %d",GLOBAL_index,(int)GLOBAL_path.size());
+            // if(GLOBAL_path.size() > 0) {
+            //     ROS_WARN("  A* Begin: (%f,%f)  ",GLOBAL_path[0](0),GLOBAL_path[0](1));
+            //     ROS_WARN("  Goal: (%f,%f)",GLOBAL_path[end](0),GLOBAL_path[end](1));
+            // }
             return;
         }
 

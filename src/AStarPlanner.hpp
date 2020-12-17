@@ -88,21 +88,19 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     M_Node start_node(m_start);
     ROS_INFO_STREAM("A* start_node " << start_node.position()(0)<<","<<start_node.position()(1)); 
     M_Node end_node(m_end);
+    ROS_INFO_STREAM("A* end_node " << end_node.position()(0)<<","<<end_node.position()(1)); 
     if(start_node ==  end_node) return LocList();
 
-    ROS_INFO_STREAM("A* end_node " << end_node.position()(0)<<","<<end_node.position()(1)); 
-
-
     // # Initialize both open and closed list
+    NodeList::iterator it; //for searching lists;
 
     NodeList open_list;
     NodeList closed_list;
 
-search_depth = 10;
     // # Add the start node
     open_list.push_back(start_node);
-    // NodeList::iterator it1 = find(open_list,start_node);
-    // if (it1 == open_list.end()) {
+    // it = find(open_list,start_node);
+    // if (it == open_list.end()) {
     //     ROS_ERROR("Cannot find start node on open list!!!");
     //     abort();
     // }
@@ -123,7 +121,7 @@ search_depth = 10;
             ROS_WARN("A* max search depth reached - %d",search_depth);
             ROS_INFO("  Start node: (%d,%d), Goal node: (%d,%d)",m_start(0),m_start(1),m_end(0),m_end(1));
             dump_list("  open_list",open_list);
-            NodeList::iterator it = find(open_list,end_node);
+            it = find(open_list,end_node);
             if (it != open_list.end()) ROS_INFO("  goal_node found in the open_list!");
             dump_list("  closed_list",closed_list);
             it = find(closed_list,end_node);
@@ -149,8 +147,25 @@ search_depth = 10;
         if (open_flag) {
             ROS_INFO_STREAM("Current node: ("<<current_node.position()(0)<<","<<current_node.position()(1)<<") f:"<<current_node.f());
         }
+
         // # Pop current off open list, add to closed list
         open_list.erase(open_list.begin()+current_index);
+
+        // Debug check - see if still in the open list
+        it = find(open_list,current_node);
+        while(it != open_list.end()) {
+            ROS_WARN("Node (%d,%d) removed from open list, but (another copy) is still there! The other will be removed.",current_node.position()(0),current_node.position()(1));
+            ROS_WARN("Current f-cost=%f, other copy f-cost=%f",current_node.f(),it->f());
+            open_list.erase(open_list.begin()+current_index);
+            it = find(open_list,current_node);
+        }
+
+
+        it = find(closed_list,current_node);
+        if (it != closed_list.end()) {
+            ROS_WARN("Node (%d,%d) adding to closed list, but (another copy) is already in there!",current_node.position()(0),current_node.position()(1));
+            ROS_WARN("Current f-cost=%f, other copy f-cost=%f",current_node.f(),it->f());
+        }
 
         closed_list.push_back(current_node);
         current_node.set_id(closed_list.size()-1);
@@ -197,7 +212,7 @@ search_depth = 10;
             M_Node neighbor = M_Node(node_position,current_node.id());
 
             // if already seen (closed_list), skip
-            NodeList::iterator it = find(closed_list,neighbor);
+            it = find(closed_list,neighbor);
             if (it != closed_list.end()) continue;
 
             // # Create the f, g, and h values
@@ -208,7 +223,11 @@ search_depth = 10;
             // Check if child is in open_list
             // if so, skip, unless g-cost is smaller
             it = find(open_list,neighbor);
-            if (it != open_list.end() && neighbor.g() > it->g()) continue;
+            if (it != open_list.end()) {
+                if (neighbor.g() > it->g()) continue;
+                ROS_INFO("Adding (%d,%d) to open_list, even though it's already there",neighbor.position()(0),neighbor.position()(1));
+                ROS_INFO("   because new one has better f-cost:%d vs old-cost:%d",neighbor.g(),it->g());
+            }
 
             // Add to open list
             open_list.push_back(neighbor);
