@@ -45,7 +45,7 @@ private:
     Vector2i m_start;
     Vector2i m_end;
 
-    bool open_flag, loop_flag, path_flag;
+    bool open_flag, loop_flag, path_flag, g_cost, h_cost;
     int search_depth;
 
     
@@ -61,6 +61,8 @@ public:
     void set_open_flag(bool f) { open_flag = f; }
     void set_loop_flag(bool f) { loop_flag = f; }
     void set_path_flag(bool f) { path_flag = f; }
+    void use_g_cost(bool f) { g_cost = f; }
+    void use_h_cost(bool f) { h_cost = f; }
     void set_max_depth(int v) { search_depth = v; }
 
     friend bool operator==( AStarPlanner::M_Node&, AStarPlanner::M_Node&);
@@ -80,7 +82,8 @@ AStarPlanner::AStarPlanner(Eigen::MatrixXi &map,
                             Vector2i &start,
                             Vector2i &end)
     :m_maze(map),m_start(start), m_end(end), 
-    open_flag(false), loop_flag(false), path_flag(false), search_depth(0) { }
+    open_flag(false), loop_flag(false), path_flag(false), 
+    g_cost(true), h_cost(true), search_depth(0) { }
     
 
 AStarPlanner::LocList AStarPlanner::run_astar(){
@@ -168,6 +171,9 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
         }
 
         closed_list.push_back(current_node);
+        // The position on the closed list is used as an 'id' or
+        // pointer to the node. A child of this node can trace back
+        // to its parent by way of the id into the closed_list.
         current_node.set_id(closed_list.size()-1);
 
 
@@ -201,23 +207,22 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
             Vector2i node_position = (current_node.position() + new_position);
 
             // # Make sure within maze
-            if (node_position[0] > (m_maze.rows()-1) or node_position[0] < 0 or node_position[1] > (m_maze.cols() -1) or node_position[1] < 0)
+            if (node_position(0) > (m_maze.rows()-1) || node_position(0) < 0 || node_position(1) > (m_maze.cols() -1) || node_position(1) < 0)
                 continue;
 
-            // # Make sure walkable terrain
-            if (m_maze(node_position[0],node_position[1]) != 0)
+            // # Make sure walkable terrain - can't use neighbor that are obstacles
+            if (m_maze(node_position(0),node_position(1)) != 0)
                 continue;
 
             // # Create new node
             M_Node neighbor = M_Node(node_position,current_node.id());
 
             // if already seen (closed_list), skip
-            it = find(closed_list,neighbor);
-            if (it != closed_list.end()) continue;
+            if( find(closed_list,neighbor) != closed_list.end()) continue;
 
             // # Create the f, g, and h values
-            neighbor.set_g( current_node.g()+1 );
-            neighbor.set_h( (neighbor.position() - end_node.position()).squaredNorm() );
+            neighbor.set_g( g_cost ? current_node.g()+1 : 0);
+            neighbor.set_h( h_cost ? (neighbor.position() - end_node.position()).squaredNorm() : 0);
             neighbor.set_f( neighbor.g() + neighbor.h() );
 
             // Check if child is in open_list
