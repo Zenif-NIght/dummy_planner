@@ -174,6 +174,28 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     aStar_planner.set_path_flag(true);
     aStar_planner.set_max_depth(msg->info.width*msg->info.height);
     
+    switch (GLOBLE_PLANNING_PARAMETER)
+    {
+    case VECTOR_FILD_CONFIG:
+        return;
+        break;        
+    case A_STAR_CONFIG:
+        aStar_planner.use_g_cost(true);
+         aStar_planner.use_h_cost(true);
+        break;
+        case DIJKSTRA_CONFIG:
+        aStar_planner.use_g_cost(true);
+        aStar_planner.use_h_cost(false);
+        break;
+    case BEST_FIRST_CONFIG:
+        aStar_planner.use_g_cost(false);
+        aStar_planner.use_h_cost(true);
+        break;
+    
+    default:
+        
+        break;
+    }
     convertFrame(GLOBAL_path, aStar_planner.run_astar(),
                  origin,
                  info.resolution);
