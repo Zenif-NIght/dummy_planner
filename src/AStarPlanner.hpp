@@ -12,7 +12,7 @@ private:
     {
     private:
         int m_parent;
-        Vector2d m_position;
+        Vector2i m_position;
         int m_g;
         double m_h;
         double m_f;
@@ -20,7 +20,7 @@ private:
     public:
         int parent(){return m_parent;};
         bool has_parent() { return m_parent >= 0; }
-        const Vector2d position(){return m_position;};
+        const Vector2i position(){return m_position;};
         const int g(){return m_g;};
         const double h(){return m_h;};
         const double f(){return m_f;};
@@ -30,7 +30,7 @@ private:
         void set_f(double v) { m_f = v; }
         void set_id(int v) { m_id = v; };
         M_Node() : m_parent(-1),m_g(0),m_h(0),m_f(0) {}
-        M_Node(Vector2d position, int parent=-1)
+        M_Node(Vector2i position, int parent=-1)
         : m_parent(parent), m_position(position),m_g(0),m_h(0),m_f(0){
         }
         ~M_Node(){}
@@ -42,64 +42,55 @@ private:
 
 
     MatrixXi m_maze;
-    Vector2d m_start;
-    Vector2d m_end;
+    Vector2i m_start;
+    Vector2i m_end;
 
     bool open_flag, loop_flag, path_flag;
+    int search_depth;
+
     
 public:
-    typedef vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> LocList;
-    typedef vector<M_Node,Eigen::aligned_allocator<Eigen::Vector2d>> NodeList;
+    typedef vector<Vector2i,Eigen::aligned_allocator<Eigen::Vector2i>> LocList;
+    typedef vector<M_Node,Eigen::aligned_allocator<Eigen::Vector2i>> NodeList;
     
-    AStarPlanner(Eigen::MatrixXi &map,Vector2d &start,Vector2d &end);
+    AStarPlanner(Eigen::MatrixXi &map,Vector2i &start,Vector2i &end);
     ~AStarPlanner();
     
     LocList run_astar();
-    void convertFrame(LocList &path, Vector2d mapPos, double resolution);
     NodeList::iterator find( NodeList&, M_Node&);
     void set_open_flag(bool f) { open_flag = f; }
     void set_loop_flag(bool f) { loop_flag = f; }
     void set_path_flag(bool f) { path_flag = f; }
+    void set_max_depth(int v) { search_depth = v; }
 
     friend bool operator==( AStarPlanner::M_Node&, AStarPlanner::M_Node&);
     friend bool operator==(const AStarPlanner::M_Node&, const AStarPlanner::M_Node&);
+    
+private:
+    void dump_list(const char* msg, NodeList &nl);
 };
 
-inline bool operator==( const Vector2d&lhs, const Vector2d&rhs)
+inline bool operator==( const Vector2i&lhs, const Vector2i&rhs)
     { return lhs(0) == rhs(0) && lhs(1) == rhs(1); }
 
 inline bool operator==( AStarPlanner::M_Node&lhs, AStarPlanner::M_Node&rhs)
     { return lhs.position() == rhs.position(); }
 
 AStarPlanner::AStarPlanner(Eigen::MatrixXi &map,
-                            Vector2d &start,
-                            Vector2d &end)
-    :m_maze(map),m_start(start), m_end(end), open_flag(false), loop_flag(false) { }
+                            Vector2i &start,
+                            Vector2i &end)
+    :m_maze(map),m_start(start), m_end(end), 
+    open_flag(false), loop_flag(false), path_flag(false), search_depth(0) { }
     
-
-void AStarPlanner::convertFrame(AStarPlanner::LocList &path, Vector2d mapPos, double resolution){
-    // ROS_INFO_STREAM("\n\npath convetion path.size():"<<path.size()); 
-    for (int i = 0; i < path.size(); i++)
-    {
-        ROS_INFO_STREAM("PRE path["<<i<<"] " << path[i](0)<<","<<path[i](1));
-
-        path[i] = path[i]*resolution+mapPos;
-
-        ROS_INFO_STREAM("POST path["<<i<<"] " << path[i](0)<<","<<path[i](1));
-
-
-    }
-    // abort();
-}
 
 AStarPlanner::LocList AStarPlanner::run_astar(){
     // # Create start and end node
     M_Node start_node(m_start);
-    ROS_INFO_STREAM("start_node " << start_node.position()(0)<<","<<start_node.position()(1)); 
+    ROS_INFO_STREAM("A* start_node " << start_node.position()(0)<<","<<start_node.position()(1)); 
     M_Node end_node(m_end);
     if(start_node ==  end_node) return LocList();
 
-    ROS_INFO_STREAM("end_node " << end_node.position()(0)<<","<<end_node.position()(1)); 
+    ROS_INFO_STREAM("A* end_node " << end_node.position()(0)<<","<<end_node.position()(1)); 
 
 
     // # Initialize both open and closed list
@@ -107,8 +98,14 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     NodeList open_list;
     NodeList closed_list;
 
+search_depth = 10;
     // # Add the start node
     open_list.push_back(start_node);
+    // NodeList::iterator it1 = find(open_list,start_node);
+    // if (it1 == open_list.end()) {
+    //     ROS_ERROR("Cannot find start node on open list!!!");
+    //     abort();
+    // }
 
     // # Loop until you find the end
     // ROS_INFO_STREAM("😅  Loop until you find found the goal"); 
@@ -119,6 +116,21 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
            ROS_INFO_STREAM("\nloop_count: "<< loop_count<<"\r"); 
         }
         loop_count ++;
+
+        // Check if exceeded max depth
+        if ( search_depth > 0 && loop_count>search_depth )
+        {
+            ROS_WARN("A* max search depth reached - %d",search_depth);
+            ROS_INFO("  Start node: (%d,%d), Goal node: (%d,%d)",m_start(0),m_start(1),m_end(0),m_end(1));
+            dump_list("  open_list",open_list);
+            NodeList::iterator it = find(open_list,end_node);
+            if (it != open_list.end()) ROS_INFO("  goal_node found in the open_list!");
+            dump_list("  closed_list",closed_list);
+            it = find(closed_list,end_node);
+            if (it != open_list.end()) ROS_INFO("  goal_node not found in the closed_list!");
+            ROS_INFO("\n");
+            return LocList(); // empty list
+        }
 
         // # Get the current node
         M_Node current_node = open_list[0];
@@ -167,11 +179,11 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
         }
 
         // # Generate Neighbors
-        for( Vector2d new_position : LocList{Vector2d(0,-1),Vector2d(0,1),Vector2d(-1,0),Vector2d(1,0),
-                                    Vector2d(-1,-1),Vector2d(-1,1),Vector2d(1,-1),Vector2d(1,1)})  //Adjacent squares
+        for( Vector2i new_position : LocList{Vector2i(0,-1),Vector2i(0,1),Vector2i(-1,0),Vector2i(1,0),
+                                    Vector2i(-1,-1),Vector2i(-1,1),Vector2i(1,-1),Vector2i(1,1)})  //Adjacent squares
         {
             // # Get node position
-            Vector2d node_position = (current_node.position() + new_position);
+            Vector2i node_position = (current_node.position() + new_position);
 
             // # Make sure within maze
             if (node_position[0] > (m_maze.rows()-1) or node_position[0] < 0 or node_position[1] > (m_maze.cols() -1) or node_position[1] < 0)
@@ -206,7 +218,7 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     // open set is empty, but goal never reached
     // failure
     // return empty path
-    ROS_ERROR("A* failed to find goal");
+    ROS_ERROR("A* failed to find goal. The open_list of nodes to explore is empty!");
     LocList path;
     return path;
 }
@@ -220,8 +232,19 @@ AStarPlanner::NodeList::iterator AStarPlanner::find( NodeList& list, M_Node &nod
     // ROS_INFO("find: while");
     for(NodeList::iterator m = list.begin(); m!=list.end(); m++)
     {
-        // ROS_INFO_STREAM("  item: " << m->position()(0)<<","<<m->position()(1) ); 
+        // ROS_INFO_STREAM("  find: item: " << m->position()(0)<<","<<m->position()(1)<<"  compared to "<<node.position()(0)<<","<<node.position()(1) ); 
         if (*m == node) { return m; }
     }
     return list.end();
+}
+
+void AStarPlanner::dump_list(const char* msg, AStarPlanner::NodeList &nl)
+{
+    ROS_INFO("%s",msg);
+    for( NodeList::iterator it = nl.begin();
+         it!=nl.end();
+         it++)
+    {
+        ROS_INFO_STREAM("   item: ("<<it->position()(0)<<","<<it->position()(1)<<")");
+    }
 }

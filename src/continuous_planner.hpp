@@ -16,6 +16,9 @@
 #include <dynamic_reconfigure/server.h>
 #include <dummy_planner/LookAheadConfig.h>
 
+#include "AStarPlanner.hpp"
+#include "Scenario.hpp"
+
 #include <string>
 
 namespace dummy_planner {
@@ -23,6 +26,21 @@ class ContinuousPlanner {
 public:
     ContinuousPlanner(const std::string & map_frame_id);
 
+    typedef vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> LocListd;
+    
+    LocListd GLOBAL_path;
+    int GLOBAL_index = 0;
+
+    void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start position
+                            const geometry_msgs::PoseStamped & pnt2, // goal position
+                            double look_ahead,
+                            const sensor_msgs::LaserScan &scan,
+                            Scenario *scenario,
+                            geometry_msgs::PoseStamped & result);
+
+    void convertFrame(LocListd &newpath, const AStarPlanner::LocList& path, Vector2d mapPos, double resolution);
+    
+    
     /*!
      * \brief odomCallback This function will be used to store odometry messages
      * \param msg Latest message
@@ -72,28 +90,15 @@ public:
     const std::string map_frame_id;
 
     /*!
-     * \brief DoVectorField enable/disable vector field control
-     * \param f boolean flag; true = enable vector field
+     * \brief Pose2Vector2d convert a pose to an Eigen Vector2d
      */
-    void DoVectorField(bool f) { m_do_vector_field = f; }
+    Eigen::Vector2d Pose2Vector2d(const geometry_msgs::PoseStamped & pose);
 
     /*!
-     * \brief DoVectorField enable/disable vector field control
-     * \return return boolean flag; true = vector field enabled
+     * \brief Vector2d2Pose convert an Eigen Vector2d to a Pose
      */
-    bool VectorFieldEnabled() { return m_do_vector_field; }
-    void DoAStar(bool f) { m_do_astar = f; }
-    bool AStarEnabled() { return m_do_astar; }
+    geometry_msgs::PoseStamped Vector2d2Pose(const Eigen::Vector2d & vec, const geometry_msgs::PoseStamped &ptemplate);
 
-    // /*!
-    //  * \brief Pose2Vector2d convert a pose to an Eigen Vector2d
-    //  */
-    // Eigen::Vector2d Pose2Vector2d(const geometry_msgs::PoseStamped & pose);
-
-    // /*!
-    //  * \brief Vector2d2Pose convert an Eigen Vector2d to a Pose
-    //  */
-    // geometry_msgs::PoseStamped Vector2d2Pose(const Eigen::Vector2d & vec, const geometry_msgs::PoseStamped &ptemplate);
 private:
 
 

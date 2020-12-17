@@ -16,10 +16,6 @@
 #include "control_type.hpp"
 #include <visualization_msgs/Marker.h>
 
-
-
-#include "AStarPlanner.hpp"
-
 #include <eigen3/Eigen/Dense>
 
 using namespace dummy_planner;
@@ -30,7 +26,9 @@ ContinuousPlanner::ContinuousPlanner(const string & map_frame_id) :
     map_frame_id(map_frame_id),
     m_flag_goal_transformed(false),
     m_tf_listener(m_tf_buffer),
-    m_last_map_size(0)
+    m_last_map_size(0),
+    GLOBAL_path(LocListd()),
+    GLOBAL_index(0)
 {}
 
 const int VECTOR_FILD_CONFIG = 0;
@@ -80,11 +78,12 @@ void ContinuousPlanner::scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg
     m_latest_scan = msg;
 }
 
-AStarPlanner::LocList GLOBAL_path;
-int GLOBAL_index = 0;
-
 void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr& msg) { //OccupancyGrid::ConstPtr
     // if(!msg || m_latest_odom != msg)return;
+    // if no odom or goal, exit - wait until they are available
+    if (!m_latest_odom || !m_latest_goal) return;
+
+    ROS_INFO("@@@@@ occCallback @@@@");
 
     std_msgs::Header header = msg->header;
     nav_msgs::MapMetaData info = msg->info;
@@ -111,8 +110,11 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // given latest Goal
 
 
-    if( !m_latest_odom || !m_latest_goal || cur_map_size <= m_last_map_size )
+    if( cur_map_size <= m_last_map_size )
+    {
+        ROS_INFO("..... occCallback exit - mapsize has not changed");
         return; //no need to update Plan
+    }
 
     m_last_map_size = cur_map_size;
     ROS_INFO_STREAM("ccupancyCallback map_size: "<< m_last_map_size);                                         
@@ -126,41 +128,59 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // grid_x = (unsigned int)((map_x - map.info.origin.position.x) / map.info.resolution)
     // grid_y = (unsigned int)((map_y - map.info.origin.position.y) / map.info.resolution)
     geometry_msgs::PoseStamped odom_pose;
+    if (!getLatestPose(odom_pose)) return; // return if transform failure
     geometry_msgs::PoseStamped goal_pose;
+    if (!getLatestGoal(goal_pose)) return; // return if transform failure
 
     // toMapFrame(m_latest_odom->pose.pose);
     // toMapFrame(m_latest_goal);
 
-    Vector2d cur((int)((m_latest_odom->pose.pose.position.x - info.origin.position.x)/info.resolution),
-                 (int)((m_latest_odom->pose.pose.position.y - info.origin.position.x)/info.resolution) );
+    Vector2d cur = Pose2Vector2d(odom_pose);
+    Vector2d goal = Pose2Vector2d(goal_pose);
+    Vector2d origin(info.origin.position.x,info.origin.position.y);
+    cur -= origin / info.resolution;
+    goal -= origin / info.resolution;
+    // Vector2d cur(odom_pose.pose.position.x,odom_pose.pose.position.y);
+    // Vector2d goal(goal_pose.pose.position.x,goal_pose.pose.position.y);
+
+    // Vector2d cur((int)((m_latest_odom->pose.pose.position.x - info.origin.position.x)/info.resolution),
+    //              (int)((m_latest_odom->pose.pose.position.y - info.origin.position.x)/info.resolution) );
     
 
-    Vector2d goal((int)((m_latest_goal->pose.position.x - info.origin.position.x)/info.resolution),
-                  (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
+    // Vector2d goal((int)((m_latest_goal->pose.position.x - info.origin.position.x)/info.resolution),
+    //               (int)((m_latest_goal->pose.position.y - info.origin.position.x)/info.resolution));
 
     ROS_WARN_STREAM("cur: ("<<m_latest_odom->pose.pose.position.x<<","<<m_latest_odom->pose.pose.position.y<<")");
     ROS_WARN_STREAM("goal: ("<<m_latest_goal->pose.position.x<<","<<m_latest_goal->pose.position.y<<")");
     ROS_WARN_STREAM("cur: ("<<cur(0)<<","<<cur(1)<<")");
     ROS_WARN_STREAM("goal: ("<<goal(0)<<","<<goal(1)<<")");
 
-    if (cur == goal )return; 
+    if (cur == goal ) 
+    {
+        ROS_WARN("---- occCallback exit - Goal reached! (%f,%f)",goal(0),goal(1));
+        return;
+    } 
 
     // ROS_INFO_STREAM("cur: ("<<(unsigned int)(( cur(0) - info.origin.position.x)/info.resolution)<<","<< (unsigned int)(( cur(1) - info.origin.position.x)/info.resolution)<<")");
 
     ROS_INFO_STREAM("info.origin.position: ("<< info.origin.position.x<<","<<info.origin.position.y<<")");
 
-    AStarPlanner aStar_planner(newMap,cur,goal);
+    Vector2i icur((int)cur(0),(int)cur(1));
+    Vector2i igoal((int)goal(0),(int)goal(1));
+    AStarPlanner aStar_planner(newMap,
+                               icur,
+                               igoal);
 
     // vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> path = aStar_planner.run_astar();
-    GLOBAL_path = AStarPlanner::LocList();
+    GLOBAL_path = LocListd();
     aStar_planner.set_open_flag(true);
     aStar_planner.set_loop_flag(true);
     aStar_planner.set_path_flag(true);
-    GLOBAL_path = aStar_planner.run_astar();
+    aStar_planner.set_max_depth(700);
 
-    aStar_planner.convertFrame(GLOBAL_path,
-                        Vector2d(info.origin.position.x,info.origin.position.y),
-                        info.resolution);
+    convertFrame(GLOBAL_path, aStar_planner.run_astar(),
+                 origin,
+                 info.resolution);
     // //TODO --> UPDATE LOOK AHEAD POINT 
     // for (int i = 0; i < 10; i++)
     // {
@@ -169,8 +189,23 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // }
     ROS_WARN_STREAM("GLOBAL_path: update");
     GLOBAL_index = 1;
-    ROS_WARN_STREAM("GLOBAL_LOOKaHEAD: " << GLOBAL_path[GLOBAL_index](0)<<","<<GLOBAL_path[GLOBAL_index](1)); 
+    ROS_WARN("--- occCallback exit - GLOBAL_LOOKaHEAD path size: %d, index: %d",(int)GLOBAL_path.size(),GLOBAL_index); 
 
+}
+
+void ContinuousPlanner::convertFrame(LocListd&newpath, const AStarPlanner::LocList &path, Vector2d mapPos, double resolution){
+    // ROS_INFO_STREAM("\n\npath convetion path.size():"<<path.size()); 
+    for (int i = 0; i < path.size(); i++)
+    {
+        ROS_INFO_STREAM("PRE path["<<i<<"] " << path[i](0)<<","<<path[i](1));
+
+        Vector2d pathd((double)path[i](0),(double)path[i](1));
+        newpath.push_back( pathd*resolution + mapPos );
+
+        ROS_INFO_STREAM("POST path["<<i<<"] " << newpath[i](0)<<","<<newpath[i](1));
+
+
+    }
 }
 
 bool ContinuousPlanner::toMapFrame( geometry_msgs::PoseStamped &pose){
@@ -260,35 +295,31 @@ bool ContinuousPlanner::getLatestScan(sensor_msgs::LaserScan &scan) {
 }
 
 // Extract an Eigen Vector from Pose. Ignore the 3rd dimension
-Vector2d Pose2Vector2d(const geometry_msgs::PoseStamped &pose)
+Vector2d ContinuousPlanner::Pose2Vector2d(const geometry_msgs::PoseStamped &pose)
 {
-    Vector2d vec;
-    vec << pose.pose.position.x, pose.pose.position.y;
-    return vec;
+    return Vector2d(pose.pose.position.x, pose.pose.position.y);
 }
 
 // Get a Pose (stamped) from an Eigen Vector
-geometry_msgs::PoseStamped Vector2d2Pose(const Vector2d &vec, const geometry_msgs::PoseStamped &ptemplate)
+geometry_msgs::PoseStamped ContinuousPlanner::Vector2d2Pose(const Vector2d &vec, const geometry_msgs::PoseStamped &ptemplate)
 {
-    geometry_msgs::PoseStamped pose;
-    pose = ptemplate;
+    geometry_msgs::PoseStamped pose = ptemplate;
     pose.pose.position.x = vec.x();
     pose.pose.position.y = vec.y();
-
     return pose;
-
 }
-void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start position
+
+void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start position
                             const geometry_msgs::PoseStamped & pnt2, // goal position
                             double look_ahead,
                             const sensor_msgs::LaserScan &scan,
                             Scenario *scenario,
-                            bool a_star_enabled,
-                            bool vector_field_enabled,
                             geometry_msgs::PoseStamped & result)
 {
     Vector2d vec_start = Pose2Vector2d(pnt1), 
              vec_goal = Pose2Vector2d(pnt2);
+    
+    ROS_INFO("############# calc LookAhead, Current:(%f,%f) Goal:(%f,%f) ###",vec_start(0),vec_start(1),vec_goal(0),vec_goal(1));
     
     // Calculate the distance between points
     Vector2d diff = vec_goal - vec_start;
@@ -297,6 +328,7 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     // If distance is less than the look_ahead then we only care about point 2
     if (dist < look_ahead) {
         result = pnt2;
+        ROS_INFO(".......... calc LookAhead exit - within goal; dist: %f, look_ahead limit: %f .....",dist,look_ahead);
         return;
     }
 
@@ -309,10 +341,19 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
     
     if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG)
     {
+        ROS_INFO("AStar enabled");
         //TESTING TODO FIX THIS
         if(GLOBAL_index >= GLOBAL_path.size())
         {
             result = Vector2d2Pose(res,pnt1);
+            int end = GLOBAL_path.size()-1;
+            ROS_WARN("...... calc LookAhead exit - end of A* path reached. At goal? ");
+            ROS_WARN("  Current: [%f,%f];  ",vec_start[0],vec_start[1]);
+            ROS_WARN("  GLOBAL_index: %d  GLOBAL_path size: %d",GLOBAL_index,(int)GLOBAL_path.size());
+            if(GLOBAL_path.size() > 0) {
+                ROS_WARN("  A* Begin: (%f,%f)  ",GLOBAL_path[0](0),GLOBAL_path[0](1));
+                ROS_WARN("  Goal: (%f,%f)",GLOBAL_path[end](0),GLOBAL_path[end](1));
+            }
             return;
         }
 
@@ -366,6 +407,8 @@ void calculateLookAheadPoint(const geometry_msgs::PoseStamped & pnt1, // start p
         // Set look-ahead based on new state.
 
     }
+    ROS_INFO("exit main");
+    ROS_INFO("....... calcLookAhead exit - normal, next step: (%f,%f)",res(0),res(1));
     return;
 }
 
@@ -485,19 +528,17 @@ int main(int argc, char** argv) {
                     BetterUnicycleKinematics kin; // vehicle kinematics
                     BetterUnicycleVehicle veh(kin,sens,&control); // vehicle
                     scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
-                                        veh, Pose2Vector2d(srv.request.goal));
+                                        veh, planner.Pose2Vector2d(srv.request.goal));
                     ROS_INFO("Done building Combined Orbit Avoid object");
                 }
             }
 
             // get the look ahead point 
-            calculateLookAheadPoint(srv.request.start,
+            planner.calculateLookAheadPoint(srv.request.start,
                                 srv.request.goal,
                                 LOOKAHEAD,//look_ahead_dub,
                                 scan,
                                 scenario, 
-                                planner.AStarEnabled(),
-                                planner.VectorFieldEnabled(),
                                 look_ahead_point);
 
             visualization_msgs::Marker line_strip;
@@ -518,11 +559,11 @@ int main(int argc, char** argv) {
                 line_strip.scale.x = 0.1;
 
                 // line_strip.points.push_back(srv.request.start.pose.position);
-                for (int i = GLOBAL_index; i < GLOBAL_path.size(); i++)
+                for (int i = planner.GLOBAL_index; i < planner.GLOBAL_path.size(); i++)
                 {
                     geometry_msgs::Point p;
-                    p.x = GLOBAL_path[i](0);
-                    p.y = GLOBAL_path[i](1);
+                    p.x = planner.GLOBAL_path[i](0);
+                    p.y = planner.GLOBAL_path[i](1);
                     p.z = 0;
                     line_strip.points.push_back(p);
                 }

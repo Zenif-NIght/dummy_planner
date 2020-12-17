@@ -119,6 +119,7 @@ void Vehicle::getObstacleDetections(const sensor_msgs::LaserScan &scan)
 // Get the coordinates of the kth obstacle scan
 Vector2d Vehicle::getObstacle(int k)
 {
+    ROS_INFO(" Vehicle: getObstacle coordinate of %dth scan",k);
     Vector2d q;
     q(0) = m_xo_latest[k];
     q(1) = m_yo_latest[k];
