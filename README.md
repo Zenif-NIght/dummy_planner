@@ -49,4 +49,6 @@ run the launch file
 
     roslaunch dummy_planner go_to_goal.launch 
 
+After a few seconds you will see RViz 
+
 ![alt text](images/image.png "Title Text")
