@@ -49,4 +49,10 @@ run the launch file
 
     roslaunch dummy_planner go_to_goal.launch 
 
-![alt text](http://url/to/img.png)
+![](./image.png)
+
+![Alt text](image.png?raw=false "Title")
+
+![alt text](https://gitlab.com/utahstate/20-fall-mobile-robotics/student_groups/allred_christopher/final_project/-/blob/master/image.png?raw=true)
+
+![alt text](https://gitlab.com/utahstate/20-fall-mobile-robotics/student_groups/allred_christopher/final_project/-/blob/master/image.png)
