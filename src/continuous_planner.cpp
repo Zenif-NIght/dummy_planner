@@ -1,3 +1,4 @@
+#include "ros/ros.h"
 #include "./continuous_planner.hpp"
 
 #include "nav_msgs/GetPlan.h"
@@ -375,7 +376,9 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
         //TESTING TODO FIX THIS
         if(GLOBAL_index >= (int)GLOBAL_path.size())
         {
-            result = Vector2d2Pose(res,pnt1);
+            geometry_msgs::PoseStamped new_pose = pnt1;
+            new_pose.header.stamp = ros::Time::now();
+            result = new_pose; //Vector2d2Pose(res,pnt1);
             // int end = GLOBAL_path.size()-1;
             // ROS_WARN("...... calc LookAhead exit - end of A* path reached. At goal? ");
             // ROS_WARN("  Current: [%f,%f];  ",vec_start[0],vec_start[1]);

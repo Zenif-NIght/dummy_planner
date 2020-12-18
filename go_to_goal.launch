@@ -42,7 +42,7 @@
 
       <group if="$(arg run_occupancy_grid)">
           <include file="$(find occupancy_grid)/launch/occupancy_grid.launch">
-            <arg name="resolution" value="0.45"/>
+            <arg name="resolution" value="0.22"/>
           </include>
       </group>
   </group>

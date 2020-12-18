@@ -107,7 +107,7 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     // cost constants
     double move_cost = 1; // cost of new neighbor;
     double diag_cost = 1.414; // cost of moving diagonally
-    double wall_cost = 1; // cost of being next to a wall
+    double wall_cost = 10; // cost of being next to a wall
     double h_eps = 1.001; // h-cost tie breaker
 
     // # Add the start node
@@ -234,7 +234,6 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
                 double new_g = current_node.g() + move_cost;
                 if (neighbor.position()(0) != current_node.position()(0) &&
                     neighbor.position()(1) != current_node.position()(1)) new_g += ( diag_cost - move_cost );
-                // if ((neighbor.position() - current_node.position()).squaredNorm() > 1) new_g += diag_cost;
                 new_g += next_to_wall(neighbor.position()) * wall_cost; 
                 neighbor.set_g( new_g );
             }
