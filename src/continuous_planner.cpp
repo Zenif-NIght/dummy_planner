@@ -163,8 +163,8 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     ROS_INFO_STREAM("info.origin.position: ("<< info.origin.position.x<<","<<info.origin.position.y<<")");
 
-    Vector2i icur((int)cur(0),(int)cur(1));
-    Vector2i igoal((int)goal(0),(int)goal(1));
+    Vector2i  icur((int)( cur(0)+0.5),(int)( cur(1)+0.5));
+    Vector2i igoal((int)(goal(0)+0.5),(int)(goal(1)+0.5));
     AStarPlanner aStar_planner(newMap,
                                icur,
                                igoal);
@@ -217,7 +217,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 }
 
 void ContinuousPlanner::convertFrame(LocListd&newpath, const AStarPlanner::LocList &path, Vector2d mapPos, double resolution){
-    ROS_INFO_STREAM("aStar_planner.run_astar==> convetion path.size():"<<path.size()); 
+    // ROS_INFO_STREAM("aStar_planner.run_astar==> convert path, path.size():"<<path.size()); 
     // geometry_msgs::PoseStamped point;
     // point.header.stamp = m_latest_goal->header.stamp;
     // point.header.frame_id = m_latest_goal->header.frame_id;
@@ -225,13 +225,13 @@ void ContinuousPlanner::convertFrame(LocListd&newpath, const AStarPlanner::LocLi
 
     for (int i = 0; i < path.size(); i++)
     {
-        ROS_INFO_STREAM("PRE path["<<i<<"] " << path[i](0)<<","<<path[i](1));
+        // ROS_INFO_STREAM("PRE path["<<i<<"] " << path[i](0)<<","<<path[i](1));
 
         Vector2d pathd((double)path[i](0),(double)path[i](1));
         // toMapFrame(geometry_msgs::PoseStamped())
         newpath.push_back( pathd*resolution + mapPos );
 
-        ROS_INFO_STREAM("POST path["<<i<<"] " << newpath[i](0)<<","<<newpath[i](1));
+        // ROS_INFO_STREAM("POST path["<<i<<"] " << newpath[i](0)<<","<<newpath[i](1));
 
 
     }
@@ -396,7 +396,7 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
         {
             GLOBAL_index ++;
             next_pt = GLOBAL_path[GLOBAL_index];
-            ROS_WARN_STREAM("NEW next_pt " << next_pt(0)<<","<<next_pt(1)<<"#################");
+            ROS_WARN_STREAM("NEW next_pt " << next_pt(0)<<","<<next_pt(1));
 
         }
 

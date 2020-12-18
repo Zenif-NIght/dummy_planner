@@ -93,9 +93,9 @@ AStarPlanner::AStarPlanner(Eigen::MatrixXi &map,
 AStarPlanner::LocList AStarPlanner::run_astar(){
     // # Create start and end node
     M_Node start_node(m_start);
-    ROS_INFO_STREAM("A* start_node " << start_node.position()(0)<<","<<start_node.position()(1)); 
+    ROS_INFO_STREAM("Planner start_node " << start_node.position()(0)<<","<<start_node.position()(1)); 
     M_Node end_node(m_end);
-    ROS_INFO_STREAM("A* end_node " << end_node.position()(0)<<","<<end_node.position()(1)); 
+    ROS_INFO_STREAM("Planner end_node " << end_node.position()(0)<<","<<end_node.position()(1)); 
     if(start_node ==  end_node) return LocList();
 
     // # Initialize both open and closed list
@@ -125,6 +125,9 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     {
         if (loop_flag) {
            ROS_INFO_STREAM("\nloop_count: "<< loop_count<<"\r"); 
+        }
+        if (loop_count > 0 && loop_count % 1000 == 0) {
+            ROS_INFO_STREAM("\nloop_count: "<< loop_count<<"\r");
         }
         loop_count ++;
 
@@ -165,20 +168,20 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
         open_list.erase(open_list.begin()+current_index);
 
         // Debug check - see if still in the open list
-        it = find(open_list,current_node);
-        while(it != open_list.end()) {
-            ROS_WARN("Node (%d,%d) removed from open list, but (another copy) is still there! The other will be removed.",current_node.position()(0),current_node.position()(1));
-            ROS_WARN("Current f-cost=%f, other copy f-cost=%f",current_node.f(),it->f());
-            open_list.erase(open_list.begin()+current_index);
-            it = find(open_list,current_node);
-        }
+        // it = find(open_list,current_node);
+        // while(it != open_list.end()) {
+        //     ROS_WARN("Node (%d,%d) removed from open list, but (another copy) is still there! The other will be removed.",current_node.position()(0),current_node.position()(1));
+        //     ROS_WARN("Current f-cost=%f, other copy f-cost=%f",current_node.f(),it->f());
+        //     open_list.erase(open_list.begin()+current_index);
+        //     it = find(open_list,current_node);
+        // }
 
 
-        it = find(closed_list,current_node);
-        if (it != closed_list.end()) {
-            ROS_WARN("Node (%d,%d) adding to closed list, but (another copy) is already in there!",current_node.position()(0),current_node.position()(1));
-            ROS_WARN("Current f-cost=%f, other copy f-cost=%f",current_node.f(),it->f());
-        }
+        // it = find(closed_list,current_node);
+        // if (it != closed_list.end()) {
+        //     ROS_WARN("Node (%d,%d) adding to closed list, but (another copy) is already in there!",current_node.position()(0),current_node.position()(1));
+        //     ROS_WARN("Current f-cost=%f, other copy f-cost=%f",current_node.f(),it->f());
+        // }
 
         closed_list.push_back(current_node);
         // The position on the closed list is used as an 'id' or
@@ -263,8 +266,8 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
             it = find(open_list,neighbor);
             if (it != open_list.end()) {
                 if (neighbor.g() >= it->g()) continue;
-                ROS_INFO("Adding (%d,%d) to open_list, even though it's already there",neighbor.position()(0),neighbor.position()(1));
-                ROS_INFO("   because new one has better g-cost:%d vs old-cost:%d",neighbor.g(),it->g());
+                // ROS_INFO("Adding (%d,%d) to open_list, even though it's already there",neighbor.position()(0),neighbor.position()(1));
+                // ROS_INFO("   because new one has better g-cost:%d vs old-cost:%d",neighbor.g(),it->g());
             }
 
             // Add to open list
