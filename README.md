@@ -61,3 +61,11 @@ Sometimes the algorithm can take a hot second to return a path especially the Di
 ![alt text](images/image_3.png "Title Text")
 
 ![alt text](images/image_4.png "Title Text")
+
+### Side Note 📝
+
+To ensure the robot does not collide with the walls a weight function is added to reduce the this risk.
+
+Due to these wall weights, the planner will at times make odd zig zag motions
+
+![alt text](images/image_5.png "Title Text")
