@@ -37,6 +37,7 @@ const int A_STAR_CONFIG = 1;
 const int DIJKSTRA_CONFIG = 2;
 const int BEST_FIRST_CONFIG = 3;
 
+double last_time = 0;
 int GLOBLE_PLANNING_PARAMETER =1;
 
 double LOOKAHEAD = 0.0;
@@ -416,33 +417,54 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
         res = vec_start + unit*look_ahead;
         result = Vector2d2Pose(res,pnt1);
         return;
-        // // Vector Field 'Integration'
-        // // Get orientation angle, theta
-        // double theta = tf::getYaw(pnt1.pose.orientation);
-        // // Put current orientation into vehicle state
-        // ROS_INFO("loop: Insert current orientation");
-        // scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
-        // // Read latest scan data into model
-        // ROS_INFO("loop: detect obstacles");
-        // scenario->getObstacleDetections(scan);
-        
-        // // Compute control inputs
-        // // TODO: time
-        // int t=0;
-        // ROS_INFO("loop: get control inputs");
-        // vector<double> x_state = scenario->x_state();
-        // Vector2d u = scenario->control(t,x_state);
-        // ROS_INFO_STREAM("loop: control u = "<<u);
 
-        // // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
-        // // vector<double> xdot = scenario->Kinematics(t,x_state, u); 
-
-        // // % Update the state
-        // // obj.vehicle.x = obj.vehicle.x + obj.dt * xdot;
-        // // vector<double> new_x = x_state + dt * xdot;
-        // // scenario->update_state(new_x);
+        // Vector Field 'Integration'
+        // Get orientation angle, theta
+        double theta = tf::getYaw(pnt1.pose.orientation);
+        // Put current orientation into vehicle state
+        ROS_INFO("loop: Insert current orientation");
+        scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
+        // Read latest scan data into model
+        ROS_INFO("loop: detect obstacles");
+        scenario->getObstacleDetections(scan);
         
-        // // Set look-ahead based on new state.
+        // Compute control inputs
+        int t = (int) ros::Time::now().toSec();
+        ROS_INFO("loop: get control inputs");
+        vector<double> x_state = scenario->x_state();
+        Vector2d u = scenario->control(t,x_state);
+        ROS_INFO_STREAM("loop: control u = "<<u);
+
+        // delta time
+        double tt = ros::Time::now().toSec();
+        double dt = tt - last_time;
+        last_time = tt;
+        // Compute xdot of state 
+        vector<double> xdot = scenario->kinematics(t,x_state, u);
+        // Update the state
+        MatrixXd mx(1,5); mx<<x_state[0],x_state[1],x_state[2],x_state[3],x_state[4];
+        MatrixXd xd(1,5); xd<<xdot[0],xdot[1],xdot[2],xdot[3],xdot[4];
+        MatrixXd nx(1,5); nx = mx + dt * xd;
+        // scenario->update_state(new_x);
+        
+        // Set look-ahead based on new state.
+        Vector2d new_q = scenario->getQ();
+        Vector2d diff2 = new_q - vec_start;
+        double dist2 = diff2.norm();
+
+        // If distance is less than the look_ahead then we only care about point 2
+        if (dist2 < look_ahead) {
+            result = pnt2;
+            // ROS_INFO(".......... calc LookAhead exit - within goal; dist: %f, look_ahead limit: %f .....",dist,look_ahead);
+            return;
+        }
+
+        // Get the unit vector between the two points
+        Vector2d unit2 = diff2 / dist2;
+
+        // Calculate the new point
+        res = vec_start + unit2*look_ahead;
+        result = Vector2d2Pose(res,pnt1);
 
     }
     // ROS_INFO("exit main");

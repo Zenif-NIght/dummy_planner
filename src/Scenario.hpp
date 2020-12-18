@@ -34,6 +34,9 @@ public:
     vector<double> x_state();
     Vector2d vectorFieldControl(int,field,const vector<double>&);
     vector<double> kinematics(int t, const vector<double> &x, const vector<double> &u);
+    vector<double> kinematics(int t,const vector<double>&x_state, Vector2d&u);
+    void update_state(vector<double>&new_state);
+    Vector2d getQ();
 };
 
 Scenario::Scenario(Vehicle &veh)
@@ -80,4 +83,19 @@ Vector2d Scenario::vectorFieldControl(int t,field f,const vector<double>&x)
 vector<double> Scenario::kinematics(int t, const vector<double> &x, const vector<double> &u)
 {
     return m_vehicle.kinematics(t,x,u);
+}
+
+vector<double> Scenario::kinematics(int t,const vector<double>&x_state, Vector2d&u)
+{
+    return vector<double>();
+}
+
+void Scenario::update_state(vector<double>&new_state)
+{
+    return;
+}
+
+Vector2d Scenario::getQ()
+{
+    return Vector2d(0,0);
 }

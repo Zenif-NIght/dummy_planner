@@ -23,6 +23,9 @@ public:
     CombinedGoToGoalOrbitAvoidWithBarrierScenario(Vehicle &veh, const Vector2d& x_g);
     ~CombinedGoToGoalOrbitAvoidWithBarrierScenario();
     Vector2d control(int t, const vector<double> &x);
+    vector<double> kinematics(int t,const vector<double>&x_state, Vector2d&u);
+    void update_state(vector<double>&new_state);
+    Vector2d getQ();
 };
 
 CombinedGoToGoalOrbitAvoidWithBarrierScenario::CombinedGoToGoalOrbitAvoidWithBarrierScenario(Vehicle &veh, const Vector2d& x_g)
@@ -122,3 +125,17 @@ Vector2d CombinedGoToGoalOrbitAvoidWithBarrierScenario::control(int t, const vec
 }
 
 
+vector<double> CombinedGoToGoalOrbitAvoidWithBarrierScenario::kinematics(int t,const vector<double>&x_state, Vector2d&u)
+{
+    return vector<double>();
+}
+
+void CombinedGoToGoalOrbitAvoidWithBarrierScenario::update_state(vector<double>&new_state)
+{
+    return;
+}
+
+Vector2d CombinedGoToGoalOrbitAvoidWithBarrierScenario::getQ()
+{
+    return Vector2d(0,0);
+}
