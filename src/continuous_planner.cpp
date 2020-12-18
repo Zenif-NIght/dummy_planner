@@ -83,6 +83,7 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     // if no odom or goal, exit - wait until they are available
 
     // ROS_INFO("@@@@@ occCallback @@@@");
+    if (GLOBLE_PLANNING_PARAMETER == VECTOR_FILD_CONFIG) return;
 
     std_msgs::Header header = msg->header;
     nav_msgs::MapMetaData info = msg->info;
@@ -169,9 +170,9 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
 
     // vector<Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> path = aStar_planner.run_astar();
     GLOBAL_path = ContinuousPlanner::LocListd();
-    aStar_planner.set_open_flag(true);
-    aStar_planner.set_loop_flag(true);
-    aStar_planner.set_path_flag(true);
+    aStar_planner.set_open_flag(false);
+    aStar_planner.set_loop_flag(false);
+    aStar_planner.set_path_flag(false);
     aStar_planner.set_max_depth(msg->info.width*msg->info.height);
     
     switch (GLOBLE_PLANNING_PARAMETER)
@@ -204,6 +205,10 @@ void ContinuousPlanner::occupancyCallback(const nav_msgs::OccupancyGridConstPtr&
     }
     else{
         GLOBAL_index = 0;
+    }
+    if((int)GLOBAL_path.size() ==0)
+    {
+        GLOBAL_path.push_back(cur);
     }
     ROS_WARN("--- occCallback exit - GLOBAL_LOOKaHEAD path size: %d, index: %d",(int)GLOBAL_path.size(),GLOBAL_index); 
     m_latest_odom = nav_msgs::Odometry::ConstPtr();
@@ -362,7 +367,9 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
     Vector2d res;
     res = vec_start + unit*look_ahead;
     
-    if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG)
+    if (GLOBLE_PLANNING_PARAMETER == A_STAR_CONFIG ||
+        GLOBLE_PLANNING_PARAMETER == DIJKSTRA_CONFIG ||
+        GLOBLE_PLANNING_PARAMETER == BEST_FIRST_CONFIG )
     {
         // ROS_INFO("AStar enabled");
         //TESTING TODO FIX THIS
@@ -401,33 +408,38 @@ void ContinuousPlanner::calculateLookAheadPoint(const geometry_msgs::PoseStamped
 
     if (GLOBLE_PLANNING_PARAMETER == VECTOR_FILD_CONFIG)
     {
-        // Vector Field 'Integration'
-        // Get orientation angle, theta
-        double theta = tf::getYaw(pnt1.pose.orientation);
-        // Put current orientation into vehicle state
-        ROS_INFO("loop: Insert current orientation");
-        scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
-        // Read latest scan data into model
-        ROS_INFO("loop: detect obstacles");
-        scenario->getObstacleDetections(scan);
+        // Calculate the new point
+        Vector2d res;
+        res = vec_start + unit*look_ahead;
+        result = Vector2d2Pose(res,pnt1);
+        return;
+        // // Vector Field 'Integration'
+        // // Get orientation angle, theta
+        // double theta = tf::getYaw(pnt1.pose.orientation);
+        // // Put current orientation into vehicle state
+        // ROS_INFO("loop: Insert current orientation");
+        // scenario->setOrientation(pnt1.pose.position.x,pnt1.pose.position.y,theta);
+        // // Read latest scan data into model
+        // ROS_INFO("loop: detect obstacles");
+        // scenario->getObstacleDetections(scan);
         
-        // Compute control inputs
-        // TODO: time
-        int t=0;
-        ROS_INFO("loop: get control inputs");
-        vector<double> x_state = scenario->x_state();
-        Vector2d u = scenario->control(t,x_state);
-        ROS_INFO_STREAM("loop: control u = "<<u);
+        // // Compute control inputs
+        // // TODO: time
+        // int t=0;
+        // ROS_INFO("loop: get control inputs");
+        // vector<double> x_state = scenario->x_state();
+        // Vector2d u = scenario->control(t,x_state);
+        // ROS_INFO_STREAM("loop: control u = "<<u);
 
-        // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
-        // vector<double> xdot = scenario->Kinematics(t,x_state, u); 
+        // // xdot = obj.vehicle.kinematics.kinematics(t, obj.vehicle.x, u);
+        // // vector<double> xdot = scenario->Kinematics(t,x_state, u); 
 
-        // % Update the state
-        // obj.vehicle.x = obj.vehicle.x + obj.dt * xdot;
-        // vector<double> new_x = x_state + dt * xdot;
-        // scenario->update_state(new_x);
+        // // % Update the state
+        // // obj.vehicle.x = obj.vehicle.x + obj.dt * xdot;
+        // // vector<double> new_x = x_state + dt * xdot;
+        // // scenario->update_state(new_x);
         
-        // Set look-ahead based on new state.
+        // // Set look-ahead based on new state.
 
     }
     // ROS_INFO("exit main");
@@ -543,17 +555,17 @@ int main(int argc, char** argv) {
 
             if (GLOBLE_PLANNING_PARAMETER == VECTOR_FILD_CONFIG)
             {
-                if (!scenario)
-                {
-                    ROS_INFO("Building a new Combined Orbit Avoid object...");
-                    RangeSensor sens(scan); // range sensor handler
-                    vectorFollowingTypePoint control; // control field
-                    BetterUnicycleKinematics kin; // vehicle kinematics
-                    BetterUnicycleVehicle veh(kin,sens,&control); // vehicle
-                    scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
-                                        veh, planner.Pose2Vector2d(srv.request.goal));
-                    ROS_INFO("Done building Combined Orbit Avoid object");
-                }
+                // if (!scenario)
+                // {
+                //     ROS_INFO("Building a new Combined Orbit Avoid object...");
+                //     RangeSensor sens(scan); // range sensor handler
+                //     vectorFollowingTypePoint control; // control field
+                //     BetterUnicycleKinematics kin; // vehicle kinematics
+                //     BetterUnicycleVehicle veh(kin,sens,&control); // vehicle
+                //     scenario = new CombinedGoToGoalOrbitAvoidWithBarrierScenario(
+                //                         veh, planner.Pose2Vector2d(srv.request.goal));
+                //     ROS_INFO("Done building Combined Orbit Avoid object");
+                // }
             }
 
             // get the look ahead point 
