@@ -107,8 +107,8 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
     // cost constants
     double move_cost = 1; // cost of new neighbor;
     double diag_cost = 1.414; // cost of moving diagonally
-    double wall_cost = 3; // cost of being next to a wall
-    double h_eps = 0.001; // h-cost tie breaker
+    double wall_cost = 1; // cost of being next to a wall
+    double h_eps = 1.001; // h-cost tie breaker
 
     // # Add the start node
     open_list.push_back(start_node);
@@ -232,7 +232,9 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
             if(g_cost) {
                 // if neighbor is diagonal, add a cost.
                 double new_g = current_node.g() + move_cost;
-                if ((neighbor.position() - current_node.position()).squaredNorm() > 1) new_g += diag_cost;
+                if (neighbor.position()(0) != current_node.position()(0) &&
+                    neighbor.position()(1) != current_node.position()(1)) new_g += ( diag_cost - move_cost );
+                // if ((neighbor.position() - current_node.position()).squaredNorm() > 1) new_g += diag_cost;
                 new_g += next_to_wall(neighbor.position()) * wall_cost; 
                 neighbor.set_g( new_g );
             }
@@ -242,11 +244,12 @@ AStarPlanner::LocList AStarPlanner::run_astar(){
                 double dx = abs(neighbor.position()(0) - end_node.position()(0) );
                 double dy = abs(neighbor.position()(1) - end_node.position()(1) );
                 
+                // double new_h = move_cost * (dx*dx + dy*dy);
                 double new_h = move_cost * (dx +dy);
-                // new_h +=  (diag_cost - 2 * move_cost) * min(dx,dy);
-                new_h +=  diag_cost * sqrt(dx*dx + dy*dy);
+                new_h +=  (diag_cost - 2 * move_cost) * min(dx,dy);
+                // new_h +=  diag_cost * sqrt(dx*dx + dy*dy);
 
-                new_h *= 0.001;
+                new_h *= h_eps;
                 neighbor.set_h( new_h );
             }
             
