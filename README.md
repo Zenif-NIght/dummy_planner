@@ -52,3 +52,12 @@ run the launch file
 After a few seconds you will see RViz 
 
 ![alt text](images/image.png "Title Text")
+
+
+## Be patient ⌛ 
+
+Sometimes the algorithm can take a hot second to return a path especially the Dijkstra Planner. 
+
+![alt text](images/image_3.png "Title Text")
+
+![alt text](images/image_4.png "Title Text")
